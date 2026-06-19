@@ -135,7 +135,7 @@
 
     let activeTab = "orientation";
     let lastSendTime = 0;
-    const SEND_INTERVAL = 50; // บังคับให้ส่งข้อมูลทุกๆ 50ms (20 PPS นิ่งๆ แก้ไขข้อมูลคอขวดบน Firebase)
+    const SEND_INTERVAL = 50; 
 
     database.ref("system/currentTab").on("value", (snapshot) => {
         const val = snapshot.val();
@@ -193,7 +193,7 @@
             if (activeTab !== "orientation") return;
 
             const now = Date.now();
-            if (now - lastSendTime < SEND_INTERVAL) return; // ล็อกเรตการส่ง
+            if (now - lastSendTime < SEND_INTERVAL) return; 
             lastSendTime = now;
 
             let roll = event.gamma || 0;
@@ -204,7 +204,6 @@
             document.getElementById("valY").textContent = roll.toFixed(1) + "°";
             document.getElementById("valZ").textContent = yaw.toFixed(1) + "°";
 
-            // ส่งข้อมูลพิกัดละเอียดพร้อมค่า Timestamp ไปซิงค์ความเร็วระหว่างกันฝั่งแดชบอร์ด PC
             database.ref("sensor/orientation").set({
                 roll: parseFloat(roll.toFixed(2)),
                 pitch: parseFloat(pitch.toFixed(2)),
