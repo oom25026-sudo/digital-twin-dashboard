@@ -8,6 +8,7 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
@@ -254,6 +255,10 @@
         .action-btn:hover { background: #f1f3f4; }
         .action-btn.primary { background: #0b57d0; color: white; border-color: #0b57d0; }
         .action-btn.primary:hover { background: #0045b5; }
+        
+        /* สไตล์ปุ่มเชื่อมต่ออุปกรณ์โมบายล์สีน้ำเงินสด */
+        .action-btn.connect-mobile { background: #1a73e8; color: white; border-color: #1a73e8; }
+        .action-btn.connect-mobile:hover { background: #1557b0; }
 
         .bottom-action-grid {
             display: grid;
@@ -283,6 +288,48 @@
             text-align: center;
             font-size: 13px;
         }
+
+        /* --- CSS ส่วนป๊อปอัปหน้าต่างแสดง QR Code --- */
+        .qr-modal {
+            display: none;
+            position: fixed;
+            z-index: 9999;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            align-items: center;
+            justify-content: center;
+        }
+        .qr-modal-content {
+            background-color: white;
+            padding: 3px;
+            border-radius: 12px;
+            text-align: center;
+            width: 320px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.25);
+            position: relative;
+            animation: fadeIn 0.3s;
+        }
+        .qr-close-btn {
+            position: absolute;
+            right: 15px;
+            top: 10px;
+            font-size: 24px;
+            cursor: pointer;
+            color: #aaa;
+        }
+        .qr-close-btn:hover { color: #333; }
+        #qrcode-canvas {
+            display: flex;
+            justify-content: center;
+            margin: 20px 0;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.9); }
+            to { opacity: 1; transform: scale(1); }
+        }
     </style>
 </head>
 <body>
@@ -297,10 +344,21 @@
         <div class="time-display-top">
             Time Elapsed: <span id="topTimer" style="color:#28a745; font-size: 16px;">0 s</span>
         </div>
+        <button id="btnOpenQR" class="action-btn connect-mobile">📱 เชื่อมต่อมือถือ</button>
         <button id="imgBtnSet" class="action-btn primary">⊙ Set</button>
         <button id="imgBtnHold" class="action-btn">⏸ Hold</button>
         <button id="imgBtnRecord" class="action-btn">● Record</button>
         <button id="imgBtnCsv" class="action-btn">↓ CSV</button>
+    </div>
+
+    <div id="qrModal" class="qr-modal">
+        <div class="qr-modal-content" style="padding: 25px;">
+            <span id="qrClose" class="qr-close-btn">&times;</span>
+            <h3 style="margin: 0 0 10px 0; color:#1a73e8;">สแกนเชื่อมต่ออุปกรณ์</h3>
+            <p style="font-size: 12px; color: #666; margin: 0 0 15px 0;">ใช้โทรศัพท์มือถือเครื่องอื่นสแกน QR Code เพื่อเชื่อมต่อสัญญาณเซนเซอร์ทันที</p>
+            <div id="qrcode-canvas"></div>
+            <p id="qrUrlLabel" style="font-size: 11px; color:#aaa; word-break: break-all; margin: 10px 0 0 0;"></p>
+        </div>
     </div>
 
     <div id="notiBox" class="notification-box hidden">
@@ -439,7 +497,6 @@
     let maxFlexion = 0.0;
     let totalPackets = 19230;
 
-    // ระบบกรองสัญญาณปรับค่าความสมูท (Low-Pass Filter) เพื่อปรับค่าในคอมและมือถือให้สัมพันธ์กันมากขึ้น
     const FILTER_ALPHA = 0.35;        
     const ORIENTATION_THRESHOLD = 0.05; 
     const MOTION_THRESHOLD = 0.03;      
@@ -449,6 +506,32 @@
     const cardOrientation = document.getElementById("cardOrientation");
     const cardAccelerometer = document.getElementById("cardAccelerometer");
     const notiBox = document.getElementById("notiBox");
+
+    /* --- ส่วนฟังก์ชันเปิด/ปิด หน้าต่าง QR Code อัตโนมัติ --- */
+    const modal = document.getElementById("qrModal");
+    const btnOpenQR = document.getElementById("btnOpenQR");
+    const qrClose = document.getElementById("qrClose");
+    let qrGenerated = false;
+
+    btnOpenQR.onclick = () => {
+        modal.style.display = "flex";
+        if (!qrGenerated) {
+            // ระบบจะแกะ URL ปัจจุบัน และแปลงลิงก์ท้ายหน้าเป็น phone.html เพื่อส่งให้มือถือเครื่องอื่นโดยอัตโนมัติ
+            let currentUrl = window.location.href;
+            let mobileUrl = currentUrl.substring(0, currentUrl.lastIndexOf("/")) + "/phone.html";
+            
+            document.getElementById("qrcode-canvas").innerHTML = ""; 
+            new QRCode(document.getElementById("qrcode-canvas"), {
+                text: mobileUrl,
+                width: 180,
+                height: 180
+            });
+            document.getElementById("qrUrlLabel").textContent = mobileUrl;
+            qrGenerated = true;
+        }
+    };
+    qrClose.onclick = () => { modal.style.display = "none"; };
+    window.onclick = (e) => { if (e.target == modal) modal.style.display = "none"; };
 
     function switchSubTab(tabName) {
         const tabs = document.querySelectorAll('.sub-tab');
@@ -540,6 +623,7 @@
     } else {
         tabOrientation.classList.add("hidden");
         tabAccelerometer.classList.add("hidden");
+        btnOpenQR.classList.add("hidden"); // ปิดปุ่ม QR บนมือถือ
         notiBox.classList.remove("hidden");
         startMobileStreaming();
 
@@ -586,7 +670,6 @@
             const data = snapshot.val();
             if (!data) return;
 
-            // นำ Low-pass filter มาร่วมกรองมุมเพี้ยนและอาการหน่วงสะสม
             const nextRoll = currentRoll + FILTER_ALPHA * (data.roll - currentRoll);
             const nextPitch = currentPitch + FILTER_ALPHA * (data.pitch - currentPitch); 
             const nextYaw = currentYaw + FILTER_ALPHA * (data.yaw - currentYaw);
@@ -606,10 +689,8 @@
                 document.getElementById("maxRomLabel").textContent = "สูงสุด " + maxFlexion.toFixed(1) + "°";
             }
             
-            // อัปเดตระนาบความถูกต้องเรียลไทม์
             document.getElementById("planeStatusBubble").textContent = `✓ ในระนาบ ${currentRoll > 0 ? '+' : ''}${currentRoll.toFixed(1)}°`;
 
-            // ล็อกพิกัด Euler 'YXZ' ป้องกันปัญหากิมบอลล็อก และทำให้การหมุนสัมพันธ์กับมุมถือโมบายล์จริง
             const radX = currentPitch * (Math.PI / 180);
             const radY = currentRoll * (Math.PI / 180);
             const radZ = -currentYaw * (Math.PI / 180);
@@ -618,7 +699,6 @@
             totalPackets++;
             document.getElementById("totalPktsText").textContent = totalPackets;
 
-            // แสดงค่าดีเลย์เครือข่ายระหว่างประมวลผล (Network Gap Latency)
             if (data.clientTimestamp) {
                 let latency = Date.now() - data.clientTimestamp;
                 document.getElementById("sideGap").textContent = latency + " ms";
