@@ -433,18 +433,140 @@
         let totalPitchROM = maxPitch - minPitch;
         let totalRollROM = maxRoll - minRoll;
 
-        document.getElementById("lblPitchROM").textContent = totalPitchROM.toFixed(1) + "°";
-        document.getElementById("lblRollROM").textContent = totalRollROM.toFixed(1) + "°";
+        // ✨ ปรับแก้: ให้ตัวเลขหลักแสดงค่าเบี่ยงเบนปัจจุบันเรียลไทม์ ขยับขึ้นลงอิสระตามท่าทาง ไม่ค้างที่ค่าสูงสุด
+        document.getElementById("lblPitchROM").textContent = Math.abs(calibratedPitch).toFixed(1) + "°";
+        document.getElementById("lblRollROM").textContent = Math.abs(calibratedRoll).toFixed(1) + "°";
         
         document.getElementById("lblMinPitch").textContent = "Min: " + minPitch.toFixed(1) + "°";
         document.getElementById("lblMaxPitch").textContent = "Max: " + maxPitch.toFixed(1) + "°";
         document.getElementById("lblMinRoll").textContent = "Min: " + minRoll.toFixed(1) + "°";
         document.getElementById("lblMaxRoll").textContent = "Max: " + maxRoll.toFixed(1) + "°";
 
-        document.getElementById("barPitch").style.width = Math.min(100, (totalPitchROM / 180) * 100) + "%";
-        document.getElementById("barRoll").style.width = Math.min(100, (totalRollROM / 180) * 100) + "%";
+        // แถบหลอดสเกลวิ่งขึ้นลงตามขนาดค่าเบี่ยงเบนในปัจจุบัน
+        document.getElementById("barPitch").style.width = Math.min(100, (Math.abs(calibratedPitch) / 90) * 100) + "%";
+        document.getElementById("barRoll").style.width = Math.min(100, (Math.abs(calibratedRoll) / 90) * 100) + "%";
 
         let elevationVal = Math.abs(calibratedPitch); 
         let tiltVal = calibratedRoll;              
 
-        document.getElementById("lblElevation").textContent = elevationVal
+        document.getElementById("lblElevation").textContent = elevationVal.toFixed(1) + "°";
+        
+        let tiltDirectionText = "0.0°";
+        if (Math.abs(tiltVal) < 0.5) {
+            tiltDirectionText = `ตรงกลาง ${Math.abs(tiltVal).toFixed(1)}°`;
+        } else if (tiltVal > 0) {
+            tiltDirectionText = `ขวา ${Math.abs(tiltVal).toFixed(1)}°`;
+        } else {
+            tiltDirectionText = `ซ้าย ${Math.abs(tiltVal).toFixed(1)}°`;
+        }
+        document.getElementById("lblTilt").textContent = tiltDirectionText;
+
+        // ค่าผลรวมองศาสะสมสุทธิขยับขึ้น-ลงเรียลไทม์ (Max ROM บนการ์ด Raw Orientation)
+        let currentAbsoluteDeviation = Math.sqrt(Math.pow(calibratedPitch, 2) + Math.pow(calibratedRoll, 2));
+        document.getElementById("romFlexion").textContent = `Max ROM: ${currentAbsoluteDeviation.toFixed(1)}°`;
+
+        document.getElementById("lblAx").textContent = data.ax.toFixed(2);
+        document.getElementById("lblAy").textContent = data.ay.toFixed(2);
+        document.getElementById("lblAz").textContent = data.az.toFixed(2);
+
+        objectGroup.rotation.set(
+            data.pitch * (Math.PI / 180),
+            data.roll * (Math.PI / 180),
+            -data.yaw * (Math.PI / 180),
+            'YXZ'
+        );
+
+        realtimeChart.data.datasets[0].data.shift();
+        if(selectedMode === "accuracy") {
+            realtimeChart.data.datasets[0].data.push(elevationVal); 
+            realtimeChart.data.datasets[1].data.shift();
+            realtimeChart.data.datasets[1].data.push(tiltVal);      
+        } else if(selectedMode === "stability") {
+            realtimeChart.data.datasets[0].data.push(noiseLevel);
+        } else {
+            realtimeChart.data.datasets[0].data.push(latencyGap);
+        }
+        realtimeChart.update();
+
+        if (selectedMode === "accuracy") {
+            let errorBias = Math.abs(calibratedRoll);
+            if (errorBias < 0.5) {
+                resBox.textContent = "🎯 มุมเที่ยงตรงสูง (ผ่านเกณฑ์)";
+                resBox.className = "metric-value text-success";
+            } else {
+                resBox.textContent = "⚠️ ตรวจพบมุมเบี่ยงเบน";
+                resBox.className = "metric-value text-warning";
+            }
+        } else if (selectedMode === "stability") {
+            if (noiseLevel < 0.12) {
+                resBox.textContent = "⏳ สัญญาณนิ่งระดับมาตรฐาน";
+                resBox.className = "metric-value text-success";
+            } else {
+                resBox.textContent = "❌ สัญญาณแกว่งตัวสูง";
+                resBox.className = "metric-value text-danger";
+            }
+        } else {
+            if (latencyGap < 150 && currentPPS > 15) {
+                resBox.textContent = "🌐 โครงข่ายเรียลไทม์เสถียร";
+                resBox.className = "metric-value text-success";
+            } else {
+                resBox.textContent = "⚠️ ข้อมูลเครือข่ายล่าช้า";
+                resBox.className = "metric-value text-warning";
+            }
+        }
+    });
+
+    document.getElementById("btnStart").onclick = () => {
+        if(isRecording) {
+            isRecording = false;
+            clearInterval(clockInterval);
+            document.getElementById("btnStart").textContent = "● เริ่มการทดสอบ";
+        } else {
+            isRecording = true;
+            timerCount = 0;
+            document.getElementById("btnStart").textContent = "⏸ หยุดค้างค่าการตรวจ";
+            clockInterval = setInterval(() => {
+                timerCount++;
+                document.getElementById("lblTimer").textContent = timerCount + " วินาที";
+            }, 1000);
+        }
+    };
+
+    document.getElementById("btnSave").onclick = () => {
+        let currentRomText = document.getElementById("romFlexion").textContent.replace("Max ROM: ", "");
+        recordsList.push({ set: currentSetNum, duration: timerCount, mode: selectedMode, currentROM: currentRomText });
+        
+        let reportStr = "";
+        recordsList.forEach(r => {
+            reportStr += `ชุดที่ ${r.set} [${r.mode}] เวลา ${r.duration} วิ (Current ROM: ${r.currentROM})<br>`;
+        });
+        document.getElementById("logOutput").innerHTML = reportStr;
+        
+        currentSetNum++;
+        document.getElementById("lblSet").textContent = currentSetNum;
+    };
+
+    document.getElementById("btnExport").onclick = () => {
+        if (recordsList.length === 0) return alert("กรุณากดบันทึกเซ็ตข้อมูลการวัดเก็บอย่างน้อย 1 ชุดข้อมูล");
+        let csv = "Set,Duration(s),ValidationMode,Current_ROM\n";
+        recordsList.forEach(r => {
+            csv += `${r.set},${r.duration},${r.mode},${r.currentROM}\n`;
+        });
+        let blob = new Blob([csv], {type: "text/csv;charset=utf-8;"});
+        let link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        link.download = "biomotion_dynamic_rom_report.csv";
+        link.click();
+    };
+
+    const modal = document.getElementById("qrModal");
+    document.getElementById("btnOpenQR").onclick = () => {
+        modal.style.display = "flex";
+        document.getElementById("qrcode").innerHTML = "";
+        let targetUrl = window.location.href.substring(0, window.location.href.lastIndexOf("/")) + "/phone.html";
+        new QRCode(document.getElementById("qrcode"), { text: targetUrl, width: 150, height: 150 });
+    };
+    document.getElementById("btnCloseQR").onclick = () => modal.style.display = "none";
+</script>
+</body>
+</html>
