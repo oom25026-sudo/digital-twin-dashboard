@@ -36,7 +36,6 @@
         .card-panel { background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 20px; margin-bottom: 20px; }
         .status-badge { background: #0284c7; color: white; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: bold; }
         
-        /* ปรับให้รองรับแถวละ 2 หรือ 3 กล่องอย่างสมดุล */
         .metrics-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-top: 15px; }
         .metrics-grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-top: 15px; }
         .metric-box { background: #0f172a; padding: 12px; border-radius: 8px; border: 1px solid #334155; text-align: center; }
@@ -66,6 +65,12 @@
         .axis-legend { display: flex; gap: 15px; font-size: 12px; margin-top: 8px; justify-content: center; }
         .legend-item { display: flex; align-items: center; gap: 5px; }
         .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+
+        /* UI ส่วนแถบวัดช่วงการเคลื่อนไหว (ROM Bar) */
+        .rom-bar-container { background: #0f172a; border: 1px solid #334155; border-radius: 6px; padding: 10px; margin-top: 10px; }
+        .rom-bar-label { font-size: 11px; color: #94a3b8; display: flex; justify-content: space-between; margin-bottom: 4px; }
+        .rom-progress-bg { background: #1e293b; height: 8px; border-radius: 4px; overflow: hidden; position: relative; }
+        .rom-progress-fill { background: linear-gradient(90deg, #38bdf8, #4ade80); height: 100%; width: 0%; transition: width 0.1s ease; }
     </style>
 </head>
 <body>
@@ -73,7 +78,10 @@
 <div class="app-container">
     <div class="header-panel">
         <h1 class="main-title">🧬 BioMotion Twin & Validation System</h1>
-        <button id="btnOpenQR" class="action-btn">📱 เชื่อมต่อตัวส่งเซนเซอร์</button>
+        <div style="display: flex; gap: 10px;">
+            <button id="btnResetROM" class="action-btn secondary" style="background: #ef4444; color: white;">🔄 รีเซ็ตค่า ROM</button>
+            <button id="btnOpenQR" class="action-btn">📱 เชื่อมต่อตัวส่งเซนเซอร์</button>
+        </div>
     </div>
 
     <div class="validation-selector-card">
@@ -100,19 +108,45 @@
                 </div>
             </div>
 
-            <!-- เพิ่มโซนแสดงผล "องศาการยก และ องศาการเอียง" เด่นชัดด้านบนกราฟ -->
-            <div class="card-panel" style="border-left: 4px solid #38bdf8;">
+            <div class="card-panel" style="border-left: 4px solid #4ade80;">
+                <h3 style="margin: 0; color: #4ade80; font-size: 16px;">📊 เครื่องมือวิเคราะห์องศาการเคลื่อนไหวสูงสุด (Range of Motion Tracker)</h3>
+                
+                <div class="metrics-grid-2">
+                    <div class="metric-box">
+                        <div style="font-size: 12px; color: #94a3b8;">ช่วงก้ม-เงยรวม (Pitch ROM)</div>
+                        <div id="lblPitchROM" class="metric-value text-success">0.0°</div>
+                        <div class="rom-bar-container">
+                            <div class="rom-bar-label">
+                                <span id="lblMinPitch">Min: 0°</span>
+                                <span id="lblMaxPitch">Max: 0°</span>
+                            </div>
+                            <div class="rom-progress-bg"><div id="barPitch" class="rom-progress-fill"></div></div>
+                        </div>
+                    </div>
+                    <div class="metric-box">
+                        <div style="font-size: 12px; color: #94a3b8;">ช่วงเอียงซ้าย-ขวารวม (Roll ROM)</div>
+                        <div id="lblRollROM" class="metric-value" style="color: #fbbf24;">0.0°</div>
+                        <div class="rom-bar-container">
+                            <div class="rom-bar-label">
+                                <span id="lblMinRoll">Min: 0°</span>
+                                <span id="lblMaxRoll">Max: 0°</span>
+                            </div>
+                            <div class="rom-progress-bg"><div id="barRoll" class="rom-progress-fill" style="background: linear-gradient(90deg, #fbbf24, #f59e0b);"></div></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card-panel">
                 <h3 style="margin: 0; color: #38bdf8; font-size: 16px;">📐 ดัชนีการเคลื่อนไหวหลัก (Biomechanics Motion Indices)</h3>
                 <div class="metrics-grid-2">
                     <div class="metric-box highlight">
                         <div style="font-size: 13px; color: #38bdf8; font-weight: bold;">🏋️‍♂️ องศาการยกตัว (Elevation Angle)</div>
                         <div id="lblElevation" class="metric-value" style="font-size: 32px; color: #38bdf8;">0.0°</div>
-                        <div style="font-size: 11px; color: #64748b; margin-top: 4px;">มุมเงยสัมบูรณ์จากแนวราบ</div>
                     </div>
                     <div class="metric-box highlight">
                         <div style="font-size: 13px; color: #fbbf24; font-weight: bold;">🤸‍♂️ องศาการเอียงเครื่อง (Lateral Tilt Angle)</div>
                         <div id="lblTilt" class="metric-value" style="font-size: 32px; color: #fbbf24;">0.0°</div>
-                        <div style="font-size: 11px; color: #64748b; margin-top: 4px;">มุมเบี่ยงเบนซ้าย-ขวา</div>
                     </div>
                 </div>
             </div>
@@ -215,6 +249,24 @@
     let recordsList = [], currentSetNum = 0; 
     let pitchHistory = [], maxRomValue = 0.0;
     let packetCount = 0, lastPpsCheck = Date.now(), currentPPS = 0;
+
+    // --- Variables สำหรับคำนวณช่วงการเคลื่อนไหวรวม (ROM Tracker) ---
+    let minPitch = 0, maxPitch = 0;
+    let minRoll = 0, maxRoll = 0;
+    let firstPayloadReceived = false;
+
+    function resetROMValues() {
+        firstPayloadReceived = false;
+        document.getElementById("lblPitchROM").textContent = "0.0°";
+        document.getElementById("lblRollROM").textContent = "0.0°";
+        document.getElementById("lblMinPitch").textContent = "Min: 0°";
+        document.getElementById("lblMaxPitch").textContent = "Max: 0°";
+        document.getElementById("lblMinRoll").textContent = "Min: 0°";
+        document.getElementById("lblMaxRoll").textContent = "Max: 0°";
+        document.getElementById("barPitch").style.width = "0%";
+        document.getElementById("barRoll").style.width = "0%";
+    }
+    document.getElementById("btnResetROM").onclick = resetROMValues;
 
     const modeSelect = document.getElementById("validationModeSelect");
     const modeDesc = document.getElementById("modeDescription");
@@ -363,9 +415,37 @@
         document.getElementById("lblRoll").textContent = data.roll.toFixed(1) + "°";
         document.getElementById("lblYaw").textContent = data.yaw.toFixed(1) + "°";
 
-        // === 📐 คำนวณองศาการยก และ องศาการเอียงเพิ่มเติม ===
-        let elevationVal = Math.abs(data.pitch); // คำนวณองศาการยกตัวจากระนาบราบสัมบูรณ์
-        let tiltVal = data.roll;              // ดึงค่าน้ำหนักการเอียงซ้ายขวาออกมาชัดเจน
+        // === 📊 คำนวณช่วงรวมของหัวข้อ Range of Motion (ROM) ===
+        if(!firstPayloadReceived) {
+            minPitch = data.pitch; maxPitch = data.pitch;
+            minRoll = data.roll; maxRoll = data.roll;
+            firstPayloadReceived = true;
+        } else {
+            if(data.pitch < minPitch) minPitch = data.pitch;
+            if(data.pitch > maxPitch) maxPitch = data.pitch;
+            if(data.roll < minRoll) minRoll = data.roll;
+            if(data.roll > maxRoll) maxRoll = data.roll;
+        }
+
+        let totalPitchROM = maxPitch - minPitch;
+        let totalRollROM = maxRoll - minRoll;
+
+        document.getElementById("lblPitchROM").textContent = totalPitchROM.toFixed(1) + "°";
+        document.getElementById("lblRollROM").textContent = totalRollROM.toFixed(1) + "°";
+        
+        document.getElementById("lblMinPitch").textContent = "Min: " + minPitch.toFixed(1) + "°";
+        document.getElementById("lblMaxPitch").textContent = "Max: " + maxPitch.toFixed(1) + "°";
+        document.getElementById("lblMinRoll").textContent = "Min: " + minRoll.toFixed(1) + "°";
+        document.getElementById("lblMaxRoll").textContent = "Max: " + maxRoll.toFixed(1) + "°";
+
+        // อัปเดต Progress Bar (เทียบสเกลเคลื่อนไหวสูงสุดเฉลี่ยที่ 180 องศา)
+        document.getElementById("barPitch").style.width = Math.min(100, (totalPitchROM / 180) * 100) + "%";
+        document.getElementById("barRoll").style.width = Math.min(100, (totalRollROM / 180) * 100) + "%";
+
+
+        // 📐 คำนวณองศาการยก และ องศาการเอียงเพิ่มเติม
+        let elevationVal = Math.abs(data.pitch); 
+        let tiltVal = data.roll;              
 
         document.getElementById("lblElevation").textContent = elevationVal.toFixed(1) + "°";
         document.getElementById("lblTilt").textContent = (tiltVal > 0 ? "ขวา " : "ซ้าย ") + Math.abs(tiltVal).toFixed(1) + "°";
@@ -389,9 +469,9 @@
 
         realtimeChart.data.datasets[0].data.shift();
         if(selectedMode === "accuracy") {
-            realtimeChart.data.datasets[0].data.push(elevationVal); // เอากล่องยกแสดงบนเส้นกราฟหลักแทน
+            realtimeChart.data.datasets[0].data.push(elevationVal); 
             realtimeChart.data.datasets[1].data.shift();
-            realtimeChart.data.datasets[1].data.push(tiltVal);      // แสดงองศาเอียงบนกราฟเส้นรอง
+            realtimeChart.data.datasets[1].data.push(tiltVal);      
         } else if(selectedMode === "stability") {
             realtimeChart.data.datasets[0].data.push(noiseLevel);
         } else {
@@ -444,14 +524,13 @@
     };
 
     document.getElementById("btnSave").onclick = () => {
-        let elevationText = document.getElementById("lblElevation").textContent;
-        let tiltText = document.getElementById("lblTilt").textContent;
-        let p = document.getElementById("lblPitch").textContent;
-        recordsList.push({ set: currentSetNum, duration: timerCount, mode: selectedMode, elevation: elevationText, tilt: tiltText, rawPitch: p });
+        let pRom = document.getElementById("lblPitchROM").textContent;
+        let rRom = document.getElementById("lblRollROM").textContent;
+        recordsList.push({ set: currentSetNum, duration: timerCount, mode: selectedMode, pitchROM: pRom, rollROM: rRom });
         
         let reportStr = "";
         recordsList.forEach(r => {
-            reportStr += `ชุดที่ ${r.set} [${r.mode}] เวลา ${r.duration} วิ (ยก: ${r.elevation} / เอียง: ${r.tilt})<br>`;
+            reportStr += `ชุดที่ ${r.set} [${r.mode}] เวลา ${r.duration} วิ (Pitch ROM: ${r.pitchROM} / Roll ROM: ${r.rollROM})<br>`;
         });
         document.getElementById("logOutput").innerHTML = reportStr;
         
@@ -461,14 +540,14 @@
 
     document.getElementById("btnExport").onclick = () => {
         if (recordsList.length === 0) return alert("กรุณากดบันทึกเซ็ตข้อมูลการวัดเก็บอย่างน้อย 1 ชุดข้อมูล");
-        let csv = "Set,Duration(s),ValidationMode,ElevationAngle,TiltAngle,RawPitch\n";
+        let csv = "Set,Duration(s),ValidationMode,Pitch_ROM,Roll_ROM\n";
         recordsList.forEach(r => {
-            csv += `${r.set},${r.duration},${r.mode},${r.elevation},${r.tilt},${r.rawPitch}\n`;
+            csv += `${r.set},${r.duration},${r.mode},${r.pitchROM},${r.rollROM}\n`;
         });
         let blob = new Blob([csv], {type: "text/csv;charset=utf-8;"});
         let link = document.createElement("a");
         link.href = URL.createObjectURL(blob);
-        link.download = "biomotion_elevation_tilt_report.csv";
+        link.download = "biomotion_rom_validation_report.csv";
         link.click();
     };
 
