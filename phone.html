@@ -9,63 +9,34 @@
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, sans-serif;
-            background-color: #0f172a;
-            color: #f8fafc;
-            text-align: center;
-            margin: 0;
-            padding: 25px;
+            background-color: #0f172a; color: #f8fafc; text-align: center; margin: 0; padding: 25px;
         }
-        .container {
-            border: 1px solid #334155;
-            background: #1e293b;
-            padding: 30px 20px;
-            border-radius: 16px;
-            margin-top: 40px;
-        }
+        .container { border: 1px solid #334155; background: #1e293b; padding: 30px 20px; border-radius: 16px; margin-top: 30px; }
         .trigger-btn {
-            background-color: #38bdf8;
-            color: #0f172a;
-            font-size: 16px;
-            font-weight: bold;
-            border: none;
-            padding: 16px 32px;
-            border-radius: 30px;
-            cursor: pointer;
-            width: 100%;
-            margin-top: 20px;
-            box-shadow: 0 4px 12px rgba(56, 189, 248, 0.3);
+            background-color: #38bdf8; color: #0f172a; font-size: 16px; font-weight: bold; border: none;
+            padding: 16px 32px; border-radius: 30px; cursor: pointer; width: 100%; margin-top: 15px;
+            box-shadow: 0 4px 12px rgba(56, 189, 248, 0.2);
         }
-        .monitor-label {
-            font-size: 12px;
-            color: #94a3b8;
-            text-transform: uppercase;
-            margin-top: 15px;
-        }
-        .monitor-value {
-            font-size: 20px;
-            font-weight: bold;
-            color: #38bdf8;
-            margin-bottom: 5px;
-        }
+        .data-title { font-size: 12px; color: #94a3b8; text-transform: uppercase; margin-top: 15px; font-weight: bold; }
+        .data-value { font-size: 22px; font-weight: bold; color: #38bdf8; margin-bottom: 2px; }
     </style>
 </head>
 <body>
 
-<h2>ตัวขับเคลื่อนสัญญาณไร้สาย</h2>
-<p style="color:#94a3b8; font-size: 14px;">เชื่อมระบบเซนเซอร์วัดค่าความเที่ยงตรง</p>
+<h2>📲 ตัวส่งเซนเซอร์ชีวกลศาสตร์</h2>
+<p style="color:#94a3b8; font-size: 13px;">ส่งสัญญาณวัดมุมโครงร่างและแรงกระแทกความเร่ง</p>
 
 <div class="container">
-    <div style="font-size: 14px; margin-bottom: 5px;">โหมดควบคุมจาก PC ปัจจุบัน:</div>
-    <div id="lblCurrentMode" style="color:#4ade80; font-weight:bold; font-size:16px;">กำลังตรวจสอบ...</div>
-
-    <button id="btnGrant" class="trigger-btn">เปิดระบบยิงพิกัดองศา</button>
+    <button id="btnGrant">🔘 เปิดระบบสตรีมข้อมูลความเร็วสูง</button>
     
-    <div style="margin-top: 30px; border-top: 1px solid #334155; padding-top: 20px;">
-        <div class="monitor-label">องศาก้มเงย (Pitch)</div>
-        <div id="txtX" class="monitor-value">0.0°</div>
+    <div style="margin-top: 25px; border-top: 1px solid #334155; padding-top: 15px;">
+        <div class="data-title">พิกัดมุมองศา (Pitch)</div>
+        <div id="txtPitch" class="data-value">0.0°</div>
         
-        <div class="monitor-label">สถานะพิกัดเครือข่าย</div>
-        <div id="txtStatus" style="color:#94a3b8; font-size:13px;">พร้อมใช้งานสแตนด์บาย</div>
+        <div class="data-title">ค่าแรงความเร่งแกน X (Accel X)</div>
+        <div id="txtAx" class="data-value">0.00</div>
+        
+        <div id="txtStatus" style="color:#94a3b8; font-size:12px; margin-top:20px;">สถานะ: รอกระตุ้นสัญญาณพิกัด</div>
     </div>
 </div>
 
@@ -76,53 +47,57 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    let targetValidationMode = "accuracy";
-
-    // ตรวจจับฟังว่าผู้ใช้งานคลิกเลือกตรวจสอบอะไรจากฝั่ง Dashboard PC
-    db.ref("system/currentValidationMode").on("value", (snapshot) => {
-        const mode = snapshot.val();
-        if(mode) {
-            targetValidationMode = mode;
-            document.getElementById("lblCurrentMode").textContent = mode.toUpperCase() + " Mode";
-        }
-    });
+    // ตัวแปรเก็บค่าเซนเซอร์เพื่อแชร์กันส่งในก้อนเดียว
+    let currentOrientation = { roll: 0, pitch: 0, yaw: 0 };
+    let currentMotion = { ax: 0, ay: 0, az: 0 };
+    let streamInterval;
 
     document.getElementById("btnGrant").onclick = () => {
         if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
-            DeviceOrientationEvent.requestPermission()
-                .then(state => {
-                    if (state === 'granted') {
-                        initStreaming();
-                        document.getElementById("btnGrant").style.display = "none";
-                    } else {
-                        alert("โปรดอนุญาตสิทธิ์การเข้าถึงอุปกรณ์");
-                    }
-                });
+            DeviceOrientationEvent.requestPermission().then(state => {
+                if (state === 'granted') { activateSensors(); } else { alert("กรุณาเปิดสิทธิ์การใช้งานเซนเซอร์"); }
+            });
         } else {
-            initStreaming();
-            document.getElementById("btnGrant").style.display = "none";
+            activateSensors();
         }
     };
 
-    function initStreaming() {
-        document.getElementById("txtStatus").textContent = "● กำลังส่งออกข้อมูลแบบเรียลไทม์";
+    function activateSensors() {
+        document.getElementById("btnGrant").style.display = "none";
+        document.getElementById("txtStatus").textContent = "● กำลังสตรีมมิ่งทั้ง 3 ค่าหลักขึ้นสู่คลาวด์...";
         document.getElementById("txtStatus").style.color = "#4ade80";
 
+        // ดักฟังค่าพิกัดความเอียง (Orientation)
         window.addEventListener("deviceorientation", (e) => {
-            let p = e.beta || 0;
-            let r = e.gamma || 0;
-            let y = e.alpha || 0;
+            currentOrientation.roll = e.gamma || 0;
+            currentOrientation.pitch = e.beta || 0;
+            currentOrientation.yaw = e.alpha || 0;
+            document.getElementById("txtPitch").textContent = currentOrientation.pitch.toFixed(1) + "°";
+        });
 
-            document.getElementById("txtX").textContent = p.toFixed(1) + "°";
+        // ดักฟังค่าความเร่งเคลื่อนไหว (Accelerometer)
+        window.addEventListener("devicemotion", (e) => {
+            const acc = e.accelerationIncludingGravity;
+            if (acc) {
+                currentMotion.ax = acc.x || 0;
+                currentMotion.ay = acc.y || 0;
+                currentMotion.az = acc.z || 0;
+                document.getElementById("txtAx").textContent = currentMotion.ax.toFixed(2);
+            }
+        });
 
-            // ยิงชุดแพ็กเก็ตขึ้นเพื่อไปเข้ากระบวนการวิเคราะห์ความน่าเชื่อถือฝั่งรับ
-            db.ref("sensor/live_data").set({
-                pitch: parseFloat(p.toFixed(2)),
-                roll: parseFloat(r.toFixed(2)),
-                yaw: parseFloat(y.toFixed(2)),
+        // ส่งข้อมูลทั้ง 3 ส่วนหลักขึ้น Firebase ในรูปแบบ Payload ชุดเดียวกันอย่างเป็นระเบียบถี่ถ้วน
+        streamInterval = setInterval(() => {
+            db.ref("sensor/live_payload").set({
+                pitch: currentOrientation.pitch,
+                roll: currentOrientation.roll,
+                yaw: currentOrientation.yaw,
+                ax: currentMotion.ax,
+                ay: currentMotion.ay,
+                az: currentMotion.az,
                 timestamp: Date.now()
             });
-        });
+        }, 50); // ส่งทุก ๆ 50ms เพื่อคงระดับความเรียลไทม์สูงสุด
     }
 </script>
 </body>
