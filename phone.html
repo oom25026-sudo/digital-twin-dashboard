@@ -3,107 +3,153 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BioMotion - Sensor Transmitter</title>
+    <title>BioMotion - Transmitter Client</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     <style>
-        body {
-            font-family: '-apple-system', BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            background-color: #0f172a; color: #f8fafc; text-align: center; padding: 30px 15px; margin: 0;
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
+            background-color: #0f172a; 
+            color: #f8fafc; 
+            text-align: center; 
+            padding: 40px 20px; 
+            margin: 0; 
         }
-        .status-card {
-            background: #1e293b; border-radius: 16px; padding: 25px; border: 1px solid #334155; margin-bottom: 20px;
+        .transmitter-card { 
+            background: #1e293b; 
+            border-radius: 16px; 
+            padding: 30px 20px; 
+            border: 1px solid #334155; 
+            max-width: 400px; 
+            margin: 0 auto; 
         }
-        .title { color: #38bdf8; font-size: 22px; font-weight: bold; margin-bottom: 5px; }
-        .subtitle { color: #94a3b8; font-size: 14px; margin-bottom: 25px; }
-        .data-box { background: #0f172a; padding: 15px; border-radius: 10px; margin-top: 10px; border: 1px solid #1e293b; }
-        .label { font-size: 12px; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; }
-        .val { font-size: 28px; font-weight: bold; color: #f1f5f9; }
-        .btn-permission {
-            background: #38bdf8; color: #0f172a; border: none; padding: 15px 30px;
-            border-radius: 12px; font-size: 16px; font-weight: bold; cursor: pointer; display: none; width: 100%;
+        .title { 
+            color: #38bdf8; 
+            font-size: 22px; 
+            font-weight: bold; 
         }
-        .indicator { width: 12px; height: 12px; border-radius: 50%; display: inline-block; background: #ef4444; margin-right: 8px; }
-        .active { background: #4ade80; box-shadow: 0 0 10px #4ade80; }
+        .indicator-dot { 
+            width: 12px; 
+            height: 12px; 
+            border-radius: 50%; 
+            display: inline-block; 
+            background: #ef4444; 
+            margin-right: 8px; 
+        }
+        .indicator-dot.active { 
+            background: #4ade80; 
+            box-shadow: 0 0 10px #4ade80; 
+        }
+        .data-stream-box { 
+            background: #0f172a; 
+            padding: 15px; 
+            border-radius: 10px; 
+            margin-top: 15px; 
+            border: 1px solid #334155; 
+        }
+        .data-label { 
+            font-size: 11px; 
+            color: #64748b; 
+            text-transform: uppercase; 
+        }
+        .data-value { 
+            font-size: 32px; 
+            font-weight: bold; 
+            color: #f1f5f9; 
+            margin-top: 5px; 
+        }
+        .btn-permission { 
+            background: #38bdf8; 
+            color: #0f172a; 
+            border: none; 
+            padding: 15px; 
+            border-radius: 10px; 
+            font-size: 16px; 
+            font-weight: bold; 
+            cursor: pointer; 
+            width: 100%; 
+            margin-bottom: 15px; 
+            display: none; 
+        }
     </style>
 </head>
 <body>
 
-    <div class="status-card">
-        <div class="title">📲 ตัวส่งสัญญาณเซนเซอร์</div>
-        <div class="subtitle">BioMotion Mobile Node</div>
+    <div class="transmitter-card">
+        <div class="title">📲 BioMotion Sensor Node</div>
+        <div style="color: #94a3b8; font-size: 14px; margin-bottom: 20px;">ฝั่งอุปกรณ์ส่งสัญญาณเซนเซอร์เคลื่อนไหว</div>
         
-        <div style="display: flex; align-items: center; justify-content: center; margin-bottom: 20px;">
-            <span id="syncIndicator" class="indicator"></span>
-            <span id="syncStatus" style="font-size: 14px; color: #94a3b8;">กำลังตัดการเชื่อมต่อ</span>
+        <div style="display: flex; align-items: center; justify-content: center; margin-bottom: 25px;">
+            <span id="syncDot" class="indicator-dot"></span>
+            <span id="syncText" style="font-size: 14px; color: #94a3b8;">รอสตรีมพิกัดองศา...</span>
         </div>
 
-        <button id="btnGrant" class="btn-permission">🔑 อนุญาตใช้งาน Gyroscope / Motion</button>
+        <button id="btnPermission" class="btn-permission">🔑 ยินยอมให้แอปเข้าถึงตัววัดความเอียง (Gyroscope)</button>
 
-        <div class="data-box">
-            <div class="label">องศาแนวตั้ง (Pitch)</div>
-            <div id="valPitch" class="val">0.0°</div>
+        <div class="data-stream-box">
+            <div class="data-label">Pitch (ก้ม-เงย)</div>
+            <div id="txtPitch" class="data-value">0.0°</div>
         </div>
         
-        <div class="data-box">
-            <div class="label">องศาแนวนอน (Roll)</div>
-            <div id="valRoll" class="val">0.0°</div>
+        <div class="data-stream-box">
+            <div class="data-label">Roll (เอียงข้าง)</div>
+            <div id="txtRoll" class="data-value">0.0°</div>
         </div>
     </div>
 
 <script>
+    // ตั้งค่ากำหนดชี้พิกัดเซิร์ฟเวอร์แบบเดียวกับหน้าจอแดชบอร์ดคอมพิวเตอร์
     const firebaseConfig = { databaseURL: "https://llllllll-3c932-default-rtdb.asia-southeast1.firebasedatabase.app/" };
     if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
     const db = firebase.database();
 
-    const syncIndicator = document.getElementById("syncIndicator");
-    const syncStatus = document.getElementById("syncStatus");
-    const btnGrant = document.getElementById("btnGrant");
+    const syncDot = document.getElementById("syncDot");
+    const syncText = document.getElementById("syncText");
+    const btnPermission = document.getElementById("btnPermission");
 
-    function initSensorStream() {
+    // ฟังก์ชันเปิดการสแกนจับพิกัดระนาบเอียงเครื่องทางฮาร์ดแวร์มือถือ
+    function startStreaming() {
         window.addEventListener('deviceorientation', (event) => {
-            // คำนวณ Mapping ให้ตรงกับรูปแบบระนาบโครงสร้างเว็บแผงควบคุมหลัก
-            let pitch = event.beta;  // ก้ม-เงย (-180 ถึง 180)
-            let roll = event.gamma;  // เอียงซ้าย-ขวา (-90 ถึง 90)
-            let yaw = event.alpha;   // ทิศทางหัวลูกศร (0 ถึง 360)
+            let pVal = event.beta || 0;  // ทิศทางการก้มเงยรอบระนาบแกน X
+            let rVal = event.gamma || 0; // ทิศทางการเอียงตะแคงข้างรอบแกน Y
+            let yVal = event.alpha || 0; // ทิศทางเข็มทิศหันหัวแกนระนาบ Z
 
-            if (pitch !== null && roll !== null) {
-                // อัปเดตข้อมูลขึ้นไปยัง Node หลักบน Firebase เพื่อส่งต่อแดชบอร์ดคอมฯ
-                db.ref("sensor/live_payload").set({
-                    pitch: parseFloat(pitch),
-                    roll: parseFloat(roll),
-                    yaw: parseFloat(yaw || 0),
-                    timestamp: Date.now()
-                });
+            // แพ็กข้อมูลตัวเลของศาเรียลไทม์บันทึกพิกัดส่งขึ้นไปยัง Firebase Database ทันที
+            db.ref("sensor/live_payload").set({
+                pitch: parseFloat(pVal),
+                roll: parseFloat(rVal),
+                yaw: parseFloat(yVal),
+                timestamp: Date.now()
+            });
 
-                document.getElementById("valPitch").textContent = pitch.toFixed(1) + "°";
-                document.getElementById("valRoll").textContent = roll.toFixed(1) + "°";
-                
-                syncIndicator.classList.add("active");
-                syncStatus.textContent = "เชื่อมต่อระบบส่งข้อมูลสดแล้ว";
-                syncStatus.style.color = "#4ade80";
-            }
+            // เขียนข้อความองศาสดๆ ลงไปบนหน้าจอมือถือให้ผู้ใช้ตรวจสอบ
+            document.getElementById("txtPitch").textContent = pVal.toFixed(1) + "°";
+            document.getElementById("txtRoll").textContent = rVal.toFixed(1) + "°";
+            
+            // เปลี่ยนสีปุ่มสถานะไฟเชื่อมต่อเป็นสีเขียวเรืองแสงแจ่มแจ้งค้างไว้
+            syncDot.classList.add("active");
+            syncText.textContent = "เชื่อมต่อและกำลังส่งข้อมูลสด";
+            syncText.style.color = "#4ade80";
         });
     }
 
-    // รองรับเงื่อนไขความปลอดภัยและสิทธิ์การเข้าถึงบนระบบ iOS 13+
+    // ฟังก์ชันตรวจสอบความปลอดภัยเพื่อป้องกันการปิดกั้นสิทธิ์ไจโรสโคปบนอุปกรณ์โมบายล์
     if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
-        btnGrant.style.display = "block";
-        btnGrant.onclick = () => {
+        btnPermission.style.display = "block";
+        btnPermission.onclick = () => {
             DeviceOrientationEvent.requestPermission()
-                .then(permissionState => {
-                    if (permissionState === 'granted') {
-                        btnGrant.style.display = "none";
-                        initSensorStream();
+                .then(state => {
+                    if (state === 'granted') {
+                        btnPermission.style.display = "none";
+                        startStreaming();
                     } else {
-                        alert('ระบบไม่ได้รับอนุญาตให้ใช้เซนเซอร์วัดความเอียงเครื่อง');
+                        alert('แอปพลิเคชันไม่สามารถดึงค่าองศาเอียงได้หากไม่ได้รับอนุญาตครับ');
                     }
-                })
-                .catch(console.error);
+                }).catch(console.error);
         };
     } else {
-        // หากเป็น Android หรือบราวเซอร์ทั่วไปสามารถรันสตรีมส่งค่าได้ทันที
-        initSensorStream();
+        // หากเป็นโมบายล์ระบบ Android หรือหน้าเว็บทั่วไปให้เปิดรันทันทีโดยอัติโนมัติ
+        startStreaming();
     }
 </script>
 </body>
