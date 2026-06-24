@@ -12,10 +12,7 @@
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #0f172a;
-            color: #f8fafc;
-            margin: 0;
-            padding: 20px;
+            background-color: #0f172a; color: #f8fafc; margin: 0; padding: 20px;
         }
         .app-container { max-width: 1200px; margin: 0 auto; }
         .header-panel {
@@ -34,42 +31,36 @@
         }
         .grid-layout { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; }
         .card-panel { background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 20px; margin-bottom: 20px; }
-        .status-badge { background: #16a34a; color: white; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: bold; }
         
-        .metrics-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-top: 15px; }
         .metrics-grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-top: 15px; }
-        .metric-box { background: #0f172a; padding: 12px; border-radius: 8px; border: 1px solid #334155; text-align: center; }
-        .metric-box.highlight { border-color: #38bdf8; background: linear-gradient(180deg, #0f172a, #1e293b); }
-        .metric-value { font-size: 24px; font-weight: bold; color: #f1f5f9; margin-top: 5px; }
+        .metric-box { background: #0f172a; padding: 15px; border-radius: 8px; border: 1px solid #334155; text-align: center; }
+        .metric-value { font-size: 32px; font-weight: bold; color: #f1f5f9; margin-top: 5px; }
         
         .text-success { color: #4ade80 !important; }
         .text-warning { color: #fbbf24 !important; }
-        .text-danger { color: #f87171 !important; }
         
         #canvas3d { width: 100%; height: 260px; background-color: #0f172a; border-radius: 8px; border: 1px solid #334155; }
         .chart-container { position: relative; height: 220px; width: 100%; margin-top: 10px; }
         
+        .btn-panel-group { display: flex; flex-direction: column; gap: 10px; margin-top: 15px; }
         .action-btn {
-            background: #38bdf8; color: #0f172a; border: none; padding: 10px 20px;
-            border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.2s;
+            background: #38bdf8; color: #0f172a; border: none; padding: 12px 20px;
+            border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.2s;
+            font-size: 15px; display: flex; align-items: center; justify-content: center; gap: 8px;
         }
-        .action-btn:hover { background: #0ea5e9; }
-        .action-btn.secondary { background: #475569; color: white; }
+        .action-btn.secondary-slate { background-color: #475569; color: white; }
+        .action-btn.danger-red { background-color: #ef4444; color: white; }
+        
+        .rom-bar-container { background: #0f172a; border: 1px solid #334155; border-radius: 6px; padding: 10px; margin-top: 10px; }
+        .rom-bar-label { font-size: 11px; color: #94a3b8; display: flex; justify-content: space-between; margin-bottom: 6px; }
+        .rom-progress-bg { background: #1e293b; height: 8px; border-radius: 4px; overflow: hidden; }
+        .rom-progress-fill { background: linear-gradient(90deg, #38bdf8, #4ade80); height: 100%; width: 0%; transition: width 0.1s ease; }
         
         .modal {
             display: none; position: fixed; top:0; left:0; width:100%; height:100%;
             background: rgba(0,0,0,0.7); align-items: center; justify-content: center; z-index: 99;
         }
         .modal-content { background: #1e293b; padding: 25px; border-radius: 12px; text-align: center; border: 1px solid #334155; }
-        
-        .axis-legend { display: flex; gap: 15px; font-size: 12px; margin-top: 8px; justify-content: center; }
-        .legend-item { display: flex; align-items: center; gap: 5px; }
-        .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
-
-        .rom-bar-container { background: #0f172a; border: 1px solid #334155; border-radius: 6px; padding: 10px; margin-top: 10px; }
-        .rom-bar-label { font-size: 11px; color: #94a3b8; display: flex; justify-content: space-between; margin-bottom: 4px; }
-        .rom-progress-bg { background: #1e293b; height: 8px; border-radius: 4px; overflow: hidden; position: relative; }
-        .rom-progress-fill { background: linear-gradient(90deg, #38bdf8, #4ade80); height: 100%; width: 0%; transition: width 0.1s ease; }
     </style>
 </head>
 <body>
@@ -78,7 +69,7 @@
     <div class="header-panel">
         <h1 class="main-title">🧬 BioMotion Twin & Validation System</h1>
         <div style="display: flex; gap: 10px;">
-            <button id="btnResetROM" class="action-btn secondary" style="background: #ef4444; color: white;">🔄 เซ็ตศูนย์ & รีเซ็ต ROM</button>
+            <button id="btnResetROM" class="action-btn danger-red">🔄 เซ็ตศูนย์ & รีเซ็ต ROM</button>
             <button id="btnOpenQR" class="action-btn">📱 เชื่อมต่อตัวส่งเซนเซอร์</button>
         </div>
     </div>
@@ -94,40 +85,27 @@
 
     <div class="grid-layout">
         <div>
-            <div class="card-panel">
-                <div style="display: flex; justify-content: space-between; align-items: center;">
-                    <span style="font-weight: bold;">แบบจำลองสมาร์ตโฟน 3 มิติ (Digital Twin Mobile Mesh)</span>
-                    <span id="currentStatusIndicator" class="status-badge" style="background-color: #64748b;">กำลังรอการเชื่อมต่อ...</span>
-                </div>
-                <div id="canvas3d" style="margin-top: 15px;"></div>
-                <div class="axis-legend">
-                    <div class="legend-item"><span class="dot" style="background-color: #ef4444;"></span> แกน X (Roll)</div>
-                    <div class="legend-item"><span class="dot" style="background-color: #22c55e;"></span> แกน Y (Yaw)</div>
-                    <div class="legend-item"><span class="dot" style="background-color: #3b82f6;"></span> แกน Z (Pitch)</div>
-                </div>
-            </div>
-
             <div class="card-panel" style="border-left: 4px solid #4ade80;">
                 <h3 style="margin: 0; color: #4ade80; font-size: 16px;">📊 เครื่องมือวิเคราะห์องศาการเคลื่อนไหวสูงสุด (Range of Motion Tracker)</h3>
                 <div class="metrics-grid-2">
                     <div class="metric-box">
-                        <div style="font-size: 12px; color: #94a3b8;">ช่วงก้ม-เงยรวม (Pitch ROM)</div>
+                        <div style="font-size: 13px; color: #94a3b8;">ช่วงก้ม-เงยรวม (Pitch ROM)</div>
                         <div id="lblPitchROM" class="metric-value text-success">0.0°</div>
                         <div class="rom-bar-container">
                             <div class="rom-bar-label">
-                                <span id="lblMinPitch">Min: 0°</span>
-                                <span id="lblMaxPitch">Max: 0°</span>
+                                <span id="lblMinPitch">Min: 0.0°</span>
+                                <span id="lblMaxPitch">Max: 0.0°</span>
                             </div>
                             <div class="rom-progress-bg"><div id="barPitch" class="rom-progress-fill"></div></div>
                         </div>
                     </div>
                     <div class="metric-box">
-                        <div style="font-size: 12px; color: #94a3b8;">ช่วงเอียงซ้าย-ขวารวม (Roll ROM)</div>
+                        <div style="font-size: 13px; color: #94a3b8;">ช่วงเอียงซ้าย-ขวารวม (Roll ROM)</div>
                         <div id="lblRollROM" class="metric-value" style="color: #fbbf24;">0.0°</div>
                         <div class="rom-bar-container">
                             <div class="rom-bar-label">
-                                <span id="lblMinRoll">Min: 0°</span>
-                                <span id="lblMaxRoll">Max: 0°</span>
+                                <span id="lblMinRoll">Min: 0.0°</span>
+                                <span id="lblMaxRoll">Max: 0.0°</span>
                             </div>
                             <div class="rom-progress-bg"><div id="barRoll" class="rom-progress-fill" style="background: linear-gradient(90deg, #fbbf24, #f59e0b);"></div></div>
                         </div>
@@ -138,74 +116,39 @@
             <div class="card-panel">
                 <h3 style="margin: 0; color: #38bdf8; font-size: 16px;">📐 ดัชนีการเคลื่อนไหวหลัก (Biomechanics Motion Indices)</h3>
                 <div class="metrics-grid-2">
-                    <div class="metric-box highlight">
-                        <div style="font-size: 13px; color: #38bdf8; font-weight: bold;">🏋️‍♂️ องศาการยกตัว (Elevation Angle)</div>
-                        <div id="lblElevation" class="metric-value" style="font-size: 26px; color: #38bdf8;">0.0°</div>
+                    <div class="metric-box" style="border-color: #38bdf8;">
+                        <div style="font-size: 14px; color: #38bdf8; font-weight: bold;">🏋️‍♂️ องศาการยกตัว (Elevation Angle)</div>
+                        <div id="lblElevation" class="metric-value" style="color: #38bdf8;">0.0°</div>
                     </div>
-                    <div class="metric-box highlight">
-                        <div style="font-size: 13px; color: #fbbf24; font-weight: bold;">🤸‍♂️ องศาการเอียงเครื่อง (Lateral Tilt Angle)</div>
-                        <div id="lblTilt" class="metric-value" style="font-size: 26px; color: #fbbf24;">ตรงกลาง 0.0°</div>
+                    <div class="metric-box" style="border-color: #fbbf24;">
+                        <div style="font-size: 14px; color: #fbbf24; font-weight: bold;">🤸‍♂️ องศาการเอียงเครื่อง (Lateral Tilt Angle)</div>
+                        <div id="lblTilt" class="metric-value" style="color: #fbbf24;">0.0°</div>
                     </div>
                 </div>
             </div>
 
             <div class="card-panel">
-                <h3 style="margin: 0; color: #38bdf8; font-size: 16px;">📈 กราฟวิเคราะห์พฤติกรรมข้อมูลเรียลไทม์</h3>
-                <div class="chart-container">
-                    <canvas id="realtimeChart"></canvas>
-                </div>
+                <div id="canvas3d"></div>
             </div>
 
             <div class="card-panel">
-                <div style="display: flex; justify-content: space-between; align-items: center;">
-                    <h3 style="margin: 0; color: #38bdf8; font-size: 16px;">🔄 ค่าพิกัดมุมองศาจากเซนเซอร์ (Raw Orientation)</h3>
-                    <span id="romFlexion" class="text-success" style="font-weight: 800; background: #064e3b; padding: 4px 10px; border-radius: 4px; transition: all 0.1s ease;">Max ROM: 0.0°</span>
-                </div>
-                <div class="metrics-grid">
-                    <div class="metric-box">
-                        <div style="font-size: 12px; color: #94a3b8;">Pitch (ก้ม-เงย)</div>
-                        <div id="lblPitch" class="metric-value">0.0°</div>
-                    </div>
-                    <div class="metric-box">
-                        <div style="font-size: 12px; color: #94a3b8;">Roll (เอียงซ้าย-ขวา)</div>
-                        <div id="lblRoll" class="metric-value">0.0°</div>
-                    </div>
-                    <div class="metric-box">
-                        <div style="font-size: 12px; color: #94a3b8;">Yaw (หมุนแนวราบ)</div>
-                        <div id="lblYaw" class="metric-value">0.0°</div>
-                    </div>
-                </div>
+                <div class="chart-container"><canvas id="realtimeChart"></canvas></div>
             </div>
         </div>
 
         <div>
-            <div class="card-panel" style="border-left: 4px solid #38bdf8;">
-                <h4 style="margin-top: 0; color: #38bdf8;">📋 ผลวิเคราะห์ตามโหมดตรวจสอบ</h4>
-                <div id="modeDescription" style="font-size: 12px; color: #94a3b8; margin-bottom: 12px;"></div>
-                <div id="validationResultBox" class="metric-value" style="font-size: 22px; text-align: center; background: #0f172a; padding: 10px; border-radius: 6px;">--</div>
-            </div>
-
             <div class="card-panel">
-                <h4 style="margin-top: 0; color: #94a3b8;">⚙️ ข้อมูลตรวจสอบเครือข่ายและความเที่ยงตรง</h4>
-                <p style="font-size: 13px; margin: 6px 0;">ความหน่วงเครือข่าย (Latency): <span id="lblGap" class="text-success">-- ms</span></p>
-                <p style="font-size: 13px; margin: 6px 0;">อัตราการส่งแพ็กเก็ต: <span id="lblPps">0</span> PPS</p>
-                <p style="font-size: 13px; margin: 6px 0;">สัญญาณรบกวนมุม ($\sigma$ Noise): <span id="lblNoise">0.000°</span></p>
-            </div>
-
-            <div class="card-panel">
-                <h4 style="margin-top: 0;">⏱️ บันทึกเซสชันผลการทดสอบ</h4>
-                <div style="font-size: 13px; margin-bottom: 8px;">เซ็ตทดสอบปัจจุบัน: <span id="lblSet" style="font-weight: bold; color: #38bdf8;">0</span></div>
-                <div style="font-size: 13px; margin-bottom: 15px;">เวลาทดสอบ: <span id="lblTimer" style="font-weight: bold; color:#4ade80;">0 วินาที</span></div>
+                <h3 style="margin: 0; font-size: 16px;">⏱️ บันทึกเซสชันผลการทดสอบ</h3>
+                <div style="font-size: 14px; margin: 15px 0 8px 0;">เซ็ตทดสอบปัจจุบัน: <span id="lblSet" style="font-weight: bold; color: #38bdf8;">1</span></div>
+                <div style="font-size: 14px; margin-bottom: 20px;">เวลาทดสอบ: <span id="lblTimer" style="font-weight: bold; color:#4ade80;">0 วินาที</span></div>
                 
-                <div style="display: flex; flex-direction: column; gap: 8px;">
-                    <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 8px;">
-                        <button id="btnStart" class="action-btn" style="background-color: #22c55e; color: white;">▶ เริ่มบันทึกค่า</button>
-                        <button id="btnResetTimer" class="action-btn secondary" style="background-color: #64748b;">🔄 รีเซ็ต</button>
-                    </div>
-                    <button id="btnSave" class="action-btn secondary">✓ บันทึกชุดข้อมูล</button>
-                    <button id="btnExport" class="action-btn secondary" style="background:#0284c7;">↓ ส่งออกไฟล์มาตรฐาน (.CSV)</button>
+                <div class="btn-panel-group">
+                    <button id="btnStart" class="action-btn">• เริ่มการทดสอบ</button>
+                    <button id="btnSave" class="action-btn secondary-slate">✓ บันทึกชุดข้อมูล</button>
+                    <button id="btnExport" class="action-btn">↓ ส่งออกไฟล์มาตรฐาน (.CSV)</button>
                 </div>
-                <div id="logOutput" style="margin-top: 15px; font-size: 11px; color: #94a3b8; max-height: 100px; overflow-y: auto; border-top: 1px solid #334155; padding-top: 10px;"></div>
+                
+                <div id="logOutput" style="margin-top: 20px; font-size: 12px; color: #94a3b8; max-height: 150px; overflow-y: auto; border-top: 1px solid #334155; padding-top: 15px; line-height: 1.6;"></div>
             </div>
         </div>
     </div>
@@ -213,199 +156,176 @@
 
 <div id="qrModal" class="modal">
     <div class="modal-content">
-        <h3 style="color:#38bdf8; margin-top:0;">เชื่อมต่อโทรศัพท์มือถือ</h3>
-        <p style="font-size: 12px; color:#94a3b8;">เปิดสแกน QR Code นี้บนมือถือเพื่อเริ่มยิงพิกัดเซนเซอร์เข้ามาในระบบ</p>
+        <h3>เชื่อมต่อโทรศัพท์มือถือ</h3>
         <div id="qrcode" style="display:flex; justify-content:center; margin: 20px 0;"></div>
-        <button id="btnCloseQR" class="action-btn secondary">ปิดหน้าต่าง</button>
+        <button id="btnCloseQR" class="action-btn secondary-slate">ปิดหน้าต่าง</button>
     </div>
 </div>
 
 <script>
-    const firebaseConfig = {
-        databaseURL: "https://llllllll-3c932-default-rtdb.asia-southeast1.firebasedatabase.app/" 
-    };
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
+    // ป้องกันปัญหาการทำงานก่อน DOM พร้อมใช้งาน
+    window.addEventListener('DOMContentLoaded', () => {
+        const firebaseConfig = { databaseURL: "https://llllllll-3c932-default-rtdb.asia-southeast1.firebasedatabase.app/" };
+        if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
+        const db = firebase.database();
 
-    let selectedMode = "accuracy";
-    let isRecording = false, timerCount = 0, clockInterval;
-    let recordsList = [], currentSetNum = 0; 
-    let pitchHistory = [];
-    let packetCount = 0, lastPpsCheck = Date.now(), currentPPS = 0;
+        let selectedMode = "accuracy";
+        let isRecording = false, timerCount = 0, clockInterval = null;
+        let recordsList = [], currentSetNum = 1; 
 
-    let minPitch = 0, maxPitch = 0;
-    let minRoll = 0, maxRoll = 0;
-    let firstPayloadReceived = false;
+        let minPitch = 0, maxPitch = 0, minRoll = 0, maxRoll = 0;
+        let firstPayloadReceived = false;
+        let lastLoggedPitchROM = "0.0", lastLoggedRollROM = "0.0";
 
-    let basePitch = 0.0;
-    let baseRoll = 0.0;
-    let shouldCalibrateNextFrame = false;
+        const btnStart = document.getElementById("btnStart");
+        const lblTimer = document.getElementById("lblTimer");
+        const lblSet = document.getElementById("lblSet");
+        const modeSelect = document.getElementById("validationModeSelect");
 
-    function resetROMValues() {
-        firstPayloadReceived = false;
-        shouldCalibrateNextFrame = true; 
-        document.getElementById("romFlexion").textContent = "Max ROM: 0.0°";
-        document.getElementById("lblPitchROM").textContent = "0.0°";
-        document.getElementById("lblRollROM").textContent = "0.0°";
-    }
-    document.getElementById("btnResetROM").onclick = resetROMValues;
-
-    const modeSelect = document.getElementById("validationModeSelect");
-    const modeDesc = document.getElementById("modeDescription");
-    const indicator = document.getElementById("currentStatusIndicator");
-    const resBox = document.getElementById("validationResultBox");
-    const btnStart = document.getElementById("btnStart");
-
-    document.getElementById("lblSet").textContent = currentSetNum;
-
-    const modeDetails = {
-        accuracy: "🎯 ตรวจจับการเคลื่อนไหว (ROM) ในระนาบเพื่อตรวจสอบความถูกต้องขององศาเทียบกับข้อกำหนดทางกายภาพบำบัด",
-        stability: "⏳ ตรวจสอบการแกว่งตัวของเซนเซอร์แอนดรอยด์/ไอโฟน หาค่าเบี่ยงเบนมาตรฐาน (Noise)",
-        network: "🌐 เช็กอัตราการส่งแพ็กเก็ตข้อมูลต่อวินาที (PPS) และความหน่วงการเดินทางข้อมูลผ่านระบบ Cloud"
-    };
-
-    const ctx = document.getElementById('realtimeChart').getContext('2d');
-    const maxDataPoints = 30;
-    const chartLabels = Array(maxDataPoints).fill('');
-    
-    const realtimeChart = new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: chartLabels,
-            datasets: [
-                { label: 'Elevation (องศาการยก)', data: Array(maxDataPoints).fill(0), borderColor: '#38bdf8', backgroundColor: 'rgba(56, 189, 248, 0.1)', borderWidth: 2, tension: 0.3, fill: true },
-                { label: 'Tilt (องศาการเอียง)', data: Array(maxDataPoints).fill(0), borderColor: '#fbbf24', borderWidth: 1.5, tension: 0.3, fill: false }
-            ]
-        },
-        options: {
-            responsive: true, maintainAspectRatio: false,
-            plugins: { legend: { labels: { color: '#94a3b8' } } },
-            scales: { x: { display: false }, y: { grid: { color: '#334155' }, ticks: { color: '#94a3b8' } } },
-            animation: { duration: 0 }
+        function resetROMValues() {
+            firstPayloadReceived = false;
+            minPitch = 0; maxPitch = 0; minRoll = 0; maxRoll = 0;
+            document.getElementById("lblPitchROM").textContent = "0.0°";
+            document.getElementById("lblRollROM").textContent = "0.0°";
+            document.getElementById("lblMinPitch").textContent = "Min: 0.0°";
+            document.getElementById("lblMaxPitch").textContent = "Max: 0.0°";
+            document.getElementById("lblMinRoll").textContent = "Min: 0.0°";
+            document.getElementById("lblMaxRoll").textContent = "Max: 0.0°";
+            document.getElementById("barPitch").style.width = "0%";
+            document.getElementById("barRoll").style.width = "0%";
         }
-    });
+        document.getElementById("btnResetROM").onclick = resetROMValues;
 
-    modeSelect.onchange = (e) => {
-        selectedMode = e.target.value;
-        modeDesc.textContent = modeDetails[selectedMode];
-        realtimeChart.update();
-    };
+        modeSelect.onchange = (e) => { selectedMode = e.target.value; };
 
-    function evalStdDev(samples) {
-        if (samples.length === 0) return 0;
-        const mean = samples.reduce((s, v) => s + v, 0) / samples.length;
-        const sumSqDiff = samples.reduce((s, v) => s + Math.pow(v - mean, 2), 0);
-        return Math.sqrt(sumSqDiff / samples.length);
-    }
-
-    const stage = document.getElementById("canvas3d");
-    const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x0f172a);
-    const camera = new THREE.PerspectiveCamera(45, stage.clientWidth / 260, 0.1, 100);
-    camera.position.set(2.5, 2.5, 4.0); 
-    camera.lookAt(0, 0, 0);
-    const renderer = new THREE.WebGLRenderer({ antialias: true });
-    renderer.setSize(stage.clientWidth, 260);
-    stage.appendChild(renderer.domElement);
-
-    const objectGroup = new THREE.Group();
-    scene.add(objectGroup);
-    const bodyGeom = new THREE.BoxGeometry(1.3, 2.4, 0.12);
-    const bodyMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.4, metalness: 0.6 });
-    const phoneBody = new THREE.Mesh(bodyGeom, bodyMat);
-    objectGroup.add(phoneBody);
-
-    function render() { requestAnimationFrame(render); renderer.render(scene, camera); }
-    render();
-
-    // 🌐 ซิงค์สถานะ Start / Pause จาก Firebase
-    db.ref("system/isRecording").on("value", (snapshot) => {
-        const remoteState = snapshot.val();
-        if (remoteState === null) return;
-        
-        isRecording = remoteState;
-        clearInterval(clockInterval);
-
-        if (isRecording) {
-            btnStart.textContent = "⏸ พักการตรวจค่า";
-            btnStart.style.backgroundColor = "#ef4444";
-            clockInterval = setInterval(() => {
-                timerCount++;
-                document.getElementById("lblTimer").textContent = timerCount + " วินาที";
-            }, 1000);
-        } else {
-            btnStart.textContent = "▶ บันทึกต่อ";
-            btnStart.style.backgroundColor = "#fbbf24";
-        }
-    });
-
-    // 🔄 รับสัญญาณ Reset จากปุ่มบนมือถือ
-    db.ref("system/resetSignal").on("value", (snapshot) => {
-        const signal = snapshot.val();
-        if (signal === true) {
+        // 🌐 ติดตามสเตตัสจาก Firebase
+        db.ref("system/isRecording").on("value", (snapshot) => {
+            isRecording = snapshot.val() || false;
             clearInterval(clockInterval);
-            isRecording = false;
-            timerCount = 0;
-            document.getElementById("lblTimer").textContent = "0 วินาที";
-            btnStart.textContent = "▶ เริ่มบันทึกค่า";
-            btnStart.style.backgroundColor = "#22c55e";
+
+            if (isRecording) {
+                btnStart.textContent = "⏸ พักการทดสอบ";
+                btnStart.style.backgroundColor = "#ef4444";
+                btnStart.style.color = "#ffffff";
+                clockInterval = setInterval(() => {
+                    timerCount++;
+                    lblTimer.textContent = timerCount + " วินาที";
+                }, 1000);
+            } else {
+                btnStart.textContent = "• เริ่มการทดสอบ";
+                btnStart.style.backgroundColor = "#38bdf8";
+                btnStart.style.color = "#0f172a";
+            }
+        });
+
+        db.ref("system/resetSignal").on("value", (snapshot) => {
+            if (snapshot.val() === true) {
+                clearInterval(clockInterval);
+                timerCount = 0;
+                lblTimer.textContent = "0 วินาที";
+            }
+        });
+
+        db.ref("sensor/live_payload").on("value", (snapshot) => {
+            const data = snapshot.val();
+            if (!data) return;
+
+            if (timerCount > 0 && !isRecording) return;
+
+            let currentPitch = data.pitch || 0;
+            let currentRoll = data.roll || 0;
+
+            if (!firstPayloadReceived) {
+                minPitch = currentPitch; maxPitch = currentPitch;
+                minRoll = currentRoll; maxRoll = currentRoll;
+                firstPayloadReceived = true;
+            } else {
+                if (currentPitch < minPitch) minPitch = currentPitch;
+                if (currentPitch > maxPitch) maxPitch = currentPitch;
+                if (currentRoll < minRoll) minRoll = currentRoll;
+                if (currentRoll > maxRoll) maxRoll = currentRoll;
+            }
+
+            let diffPitch = Math.abs(maxPitch - minPitch);
+            let diffRoll = Math.abs(maxRoll - minRoll);
+            lastLoggedPitchROM = diffPitch.toFixed(1);
+            lastLoggedRollROM = diffRoll.toFixed(1);
+
+            document.getElementById("lblPitchROM").textContent = lastLoggedPitchROM + "°";
+            document.getElementById("lblRollROM").textContent = lastLoggedRollROM + "°";
+            document.getElementById("lblMinPitch").textContent = "Min: " + minPitch.toFixed(1) + "°";
+            document.getElementById("lblMaxPitch").textContent = "Max: " + maxPitch.toFixed(1) + "°";
+            document.getElementById("lblMinRoll").textContent = "Min: " + minRoll.toFixed(1) + "°";
+            document.getElementById("lblMaxRoll").textContent = "Max: " + maxRoll.toFixed(1) + "°";
+
+            document.getElementById("barPitch").style.width = Math.min(100, (diffPitch / 180) * 100) + "%";
+            document.getElementById("barRoll").style.width = Math.min(100, (diffRoll / 180) * 100) + "%";
+
+            document.getElementById("lblElevation").textContent = Math.abs(currentPitch).toFixed(1) + "°";
+            document.getElementById("lblTilt").textContent = currentRoll > 0 ? "ขวา " + Math.abs(currentRoll).toFixed(1) + "°" : "ซ้าย " + Math.abs(currentRoll).toFixed(1) + "°";
+            
+            if (phoneMesh) {
+                phoneMesh.rotation.set(currentPitch * (Math.PI / 180), currentRoll * (Math.PI / 180), -(data.yaw || 0) * (Math.PI / 180), 'YXZ');
+            }
+        });
+
+        btnStart.onclick = () => {
+            db.ref("system/resetSignal").set(false);
+            db.ref("system/isRecording").set(!isRecording);
+        };
+
+        document.getElementById("btnSave").onclick = () => {
+            recordsList.push({
+                set: currentSetNum, duration: timerCount, mode: selectedMode,
+                pitchRom: lastLoggedPitchROM, rollRom: lastLoggedRollROM
+            });
+            let logHTML = "";
+            recordsList.forEach((r, idx) => {
+                logHTML += `ชุดที่ ${idx} [${r.mode}] เวลา ${r.duration} วิ (Pitch ROM: ${r.pitchRom}° / Roll ROM: ${r.rollRom}°)<br>`;
+            });
+            document.getElementById("logOutput").innerHTML = logHTML;
+            currentSetNum++;
+            lblSet.textContent = currentSetNum;
+        };
+
+        document.getElementById("btnExport").onclick = () => {
+            if(!recordsList.length) return alert("ไม่มีข้อมูลสำหรับการดาวน์โหลด");
+            let csv = "Set,Duration(s),Mode,Pitch_ROM,Roll_ROM\n";
+            recordsList.forEach(r => { csv += `${r.set},${r.duration},${r.mode},${r.pitchRom},${r.rollRom}\n`; });
+            let blob = new Blob([csv], {type: "text/csv;charset=utf-8;"});
+            let link = document.createElement("a");
+            link.href = URL.createObjectURL(blob); link.download = "biomotion_test_report.csv"; link.click();
+        };
+
+        // 📐 ส่วนเริ่มต้นระบบ 3D Graphics
+        let scene, camera, renderer, phoneMesh;
+        const container3d = document.getElementById("canvas3d");
+        if(container3d) {
+            scene = new THREE.Scene(); scene.background = new THREE.Color(0x0f172a);
+            camera = new THREE.PerspectiveCamera(45, container3d.clientWidth / 260, 0.1, 100);
+            camera.position.set(2.5, 2.5, 4.0); camera.lookAt(0, 0, 0);
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(container3d.clientWidth, 260);
+            container3d.appendChild(renderer.domElement);
+            
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.6); scene.add(ambientLight);
+            const dirLight = new THREE.DirectionalLight(0xffffff, 0.8); dirLight.position.set(5, 5, 5); scene.add(dirLight);
+
+            const bodyGeom = new THREE.BoxGeometry(1.3, 2.4, 0.15);
+            const bodyMat = new THREE.MeshStandardMaterial({ color: 0x38bdf8, roughness: 0.3, metalness: 0.5 });
+            phoneMesh = new THREE.Mesh(bodyGeom, bodyMat); scene.add(phoneMesh);
+
+            function animate() { requestAnimationFrame(animate); renderer.render(scene, camera); }
+            animate();
         }
+
+        document.getElementById("btnOpenQR").onclick = () => {
+            document.getElementById("qrModal").style.display = "flex";
+            document.getElementById("qrcode").innerHTML = "";
+            new QRCode(document.getElementById("qrcode"), { text: window.location.href.replace("index.html","") + "phone.html", width: 150, height: 150 });
+        };
+        document.getElementById("btnCloseQR").onclick = () => { document.getElementById("qrModal").style.display = "none"; };
     });
-
-    db.ref("sensor/live_payload").on("value", (snapshot) => {
-        const data = snapshot.val();
-        if (!data) return;
-
-        if (timerCount > 0 && !isRecording) return; // ล็อคหน้าจอชั่วคราวหากถูกสั่ง Pause
-
-        indicator.textContent = "● ระบบออนไลน์เรียลไทม์";
-        indicator.style.backgroundColor = "#16a34a";
-
-        packetCount++;
-        const nowTime = Date.now();
-        if (nowTime - lastPpsCheck >= 1000) { currentPPS = packetCount; packetCount = 0; lastPpsCheck = nowTime; }
-
-        const latencyGap = nowTime - data.timestamp;
-        document.getElementById("lblGap").textContent = latencyGap + " ms";
-
-        document.getElementById("lblPitch").textContent = data.pitch.toFixed(1) + "°";
-        document.getElementById("lblRoll").textContent = data.roll.toFixed(1) + "°";
-        document.getElementById("lblYaw").textContent = data.yaw.toFixed(1) + "°";
-
-        if(shouldCalibrateNextFrame) { basePitch = data.pitch; baseRoll = data.roll; shouldCalibrateNextFrame = false; }
-        let calibratedPitch = data.pitch - basePitch;
-        let calibratedRoll = data.roll - baseRoll;
-
-        document.getElementById("lblPitchROM").textContent = Math.abs(calibratedPitch).toFixed(1) + "°";
-        document.getElementById("lblRollROM").textContent = Math.abs(calibratedRoll).toFixed(1) + "°";
-
-        objectGroup.rotation.set(data.pitch * (Math.PI / 180), data.roll * (Math.PI / 180), -data.yaw * (Math.PI / 180), 'YXZ');
-        realtimeChart.data.datasets[0].data.shift();
-        realtimeChart.data.datasets[0].data.push(Math.abs(calibratedPitch));
-        realtimeChart.update();
-    });
-
-    // สั่งเริ่มงาน / พัก จากคอมพิวเตอร์
-    btnStart.onclick = () => {
-        db.ref("system/resetSignal").set(false);
-        db.ref("system/isRecording").set(!isRecording);
-    };
-
-    // ปุ่มรีเซ็ตจากหน้าจอคอมพิวเตอร์
-    document.getElementById("btnResetTimer").onclick = () => {
-        db.ref("system/isRecording").set(false);
-        db.ref("system/resetSignal").set(true);
-    };
-
-    document.getElementById("btnSave").onclick = () => {
-        let currentRomText = document.getElementById("romFlexion").textContent.replace("Max ROM: ", "");
-        recordsList.push({ set: currentSetNum, duration: timerCount, mode: selectedMode, currentROM: currentRomText });
-        let reportStr = "";
-        recordsList.forEach(r => { reportStr += `ชุดที่ ${r.set} [${r.mode}] เวลา ${r.duration} วิ<br>`; });
-        document.getElementById("logOutput").innerHTML = reportStr;
-        currentSetNum++;
-        document.getElementById("lblSet").textContent = currentSetNum;
-    };
 </script>
 </body>
 </html>
