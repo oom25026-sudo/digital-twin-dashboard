@@ -159,7 +159,7 @@
             <div class="card-panel">
                 <div style="display: flex; justify-content: space-between; align-items: center;">
                     <h3 style="margin: 0; color: #38bdf8; font-size: 16px;">🔄 ค่าพิกัดมุมองศาจากเซนเซอร์ (Raw Orientation)</h3>
-                    <span id="romFlexion" class="text-success" style="font-weight: 800; background: #064e3b; padding: 4px 10px; border-radius: 4px;">Max Absolute ROM: 0.0°</span>
+                    <span id="romFlexion" class="text-success" style="font-weight: 800; background: #064e3b; padding: 4px 10px; border-radius: 4px; transition: all 0.1s ease;">Max ROM: 0.0°</span>
                 </div>
                 <div class="metrics-grid">
                     <div class="metric-box">
@@ -246,23 +246,20 @@
     let isRecording = false, timerCount = 0, clockInterval;
     let recordsList = [], currentSetNum = 0; 
     let pitchHistory = [];
-    let maxAbsoluteROM = 0.0;
     let packetCount = 0, lastPpsCheck = Date.now(), currentPPS = 0;
 
     let minPitch = 0, maxPitch = 0;
     let minRoll = 0, maxRoll = 0;
     let firstPayloadReceived = false;
 
-    // --- Variables สำหรับระบบคาริเบรตค่ากลาง (Calibration Baseline) ---
     let basePitch = 0.0;
     let baseRoll = 0.0;
     let shouldCalibrateNextFrame = false;
 
     function resetROMValues() {
         firstPayloadReceived = false;
-        maxAbsoluteROM = 0.0;
-        shouldCalibrateNextFrame = true; // เมื่อกดรีเซ็ต จะนำค่าในเฟรมถัดไปมาทำเป็นค่ากลางสัมบูรณ์
-        document.getElementById("romFlexion").textContent = "Max Absolute ROM: 0.0°";
+        shouldCalibrateNextFrame = true; 
+        document.getElementById("romFlexion").textContent = "Max ROM: 0.0°";
         document.getElementById("lblPitchROM").textContent = "0.0°";
         document.getElementById("lblRollROM").textContent = "0.0°";
         document.getElementById("lblMinPitch").textContent = "Min: 0°";
@@ -413,14 +410,12 @@
         document.getElementById("lblRoll").textContent = data.roll.toFixed(1) + "°";
         document.getElementById("lblYaw").textContent = data.yaw.toFixed(1) + "°";
 
-        // === ทำการ Calibration หาค่ากลางสัมบูรณ์ ===
         if(shouldCalibrateNextFrame) {
             basePitch = data.pitch;
             baseRoll = data.roll;
             shouldCalibrateNextFrame = false;
         }
 
-        // คำนวณหามุมสัมพัทธ์หลังหักล้างค่ากลางหลักแล้ว
         let calibratedPitch = data.pitch - basePitch;
         let calibratedRoll = data.roll - baseRoll;
 
@@ -454,7 +449,6 @@
 
         document.getElementById("lblElevation").textContent = elevationVal.toFixed(1) + "°";
         
-        // === 💡 แสดงผลระบบที่มีค่ากลางสากลบน UI (Lateral Tilt Indicator) ===
         let tiltDirectionText = "[ ตรงกลาง ] 0.0°";
         if (Math.abs(tiltVal) < 0.5) {
             tiltDirectionText = "[ ตรงกลาง ] " + Math.abs(tiltVal).toFixed(1) + "°";
@@ -465,12 +459,9 @@
         }
         document.getElementById("lblTilt").textContent = tiltDirectionText;
 
-        // ส่วนคำนวณหา Max Absolute ROM 
+        // === 💡 ปรับปรุงตรรกะใหม่: คำนวณองศาสะสมสุทธิขยับขึ้น-ลงเรียลไทม์ (Current 3D Displacement) ===
         let currentAbsoluteDeviation = Math.sqrt(Math.pow(calibratedPitch, 2) + Math.pow(calibratedRoll, 2));
-        if(currentAbsoluteDeviation > maxAbsoluteROM) {
-            maxAbsoluteROM = currentAbsoluteDeviation;
-            document.getElementById("romFlexion").textContent = `Max Absolute ROM: ${maxAbsoluteROM.toFixed(1)}°`;
-        }
+        document.getElementById("romFlexion").textContent = `Max ROM: ${currentAbsoluteDeviation.toFixed(1)}°`;
 
         document.getElementById("lblAx").textContent = data.ax.toFixed(2);
         document.getElementById("lblAy").textContent = data.ay.toFixed(2);
@@ -540,12 +531,12 @@
     };
 
     document.getElementById("btnSave").onclick = () => {
-        let absoluteRomText = document.getElementById("romFlexion").textContent.replace("Max Absolute ROM: ", "");
-        recordsList.push({ set: currentSetNum, duration: timerCount, mode: selectedMode, absoluteROM: absoluteRomText });
+        let currentRomText = document.getElementById("romFlexion").textContent.replace("Max ROM: ", "");
+        recordsList.push({ set: currentSetNum, duration: timerCount, mode: selectedMode, currentROM: currentRomText });
         
         let reportStr = "";
         recordsList.forEach(r => {
-            reportStr += `ชุดที่ ${r.set} [${r.mode}] เวลา ${r.duration} วิ (Max Absolute ROM: ${r.absoluteROM})<br>`;
+            reportStr += `ชุดที่ ${r.set} [${r.mode}] เวลา ${r.duration} วิ (Current ROM: ${r.currentROM})<br>`;
         });
         document.getElementById("logOutput").innerHTML = reportStr;
         
@@ -555,14 +546,14 @@
 
     document.getElementById("btnExport").onclick = () => {
         if (recordsList.length === 0) return alert("กรุณากดบันทึกเซ็ตข้อมูลการวัดเก็บอย่างน้อย 1 ชุดข้อมูล");
-        let csv = "Set,Duration(s),ValidationMode,Max_Absolute_ROM\n";
+        let csv = "Set,Duration(s),ValidationMode,Current_ROM\n";
         recordsList.forEach(r => {
-            csv += `${r.set},${r.duration},${r.mode},${r.absoluteROM}\n`;
+            csv += `${r.set},${r.duration},${r.mode},${r.currentROM}\n`;
         });
         let blob = new Blob([csv], {type: "text/csv;charset=utf-8;"});
         let link = document.createElement("a");
         link.href = URL.createObjectURL(blob);
-        link.download = "biomotion_absolute_rom_report.csv";
+        link.download = "biomotion_dynamic_rom_report.csv";
         link.click();
     };
 
