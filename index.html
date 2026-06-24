@@ -278,6 +278,7 @@
     const modeDesc = document.getElementById("modeDescription");
     const indicator = document.getElementById("currentStatusIndicator");
     const resBox = document.getElementById("validationResultBox");
+    const btnStart = document.getElementById("btnStart");
 
     document.getElementById("lblSet").textContent = currentSetNum;
 
@@ -384,11 +385,32 @@
     function render() { requestAnimationFrame(render); renderer.render(scene, camera); }
     render();
 
+    // 🌐 ซิงค์สถานะ Start/Pause จาก Firebase (เมื่อมือถือสั่งเปลี่ยน หรือคอมสั่งเปลี่ยน)
+    db.ref("system/isRecording").on("value", (snapshot) => {
+        const remoteState = snapshot.val();
+        if (remoteState === null) return;
+        
+        isRecording = remoteState;
+        clearInterval(clockInterval);
+
+        if (isRecording) {
+            btnStart.textContent = "⏸ พักการตรวจค่า";
+            btnStart.style.backgroundColor = "#ef4444";
+            clockInterval = setInterval(() => {
+                timerCount++;
+                document.getElementById("lblTimer").textContent = timerCount + " วินาที";
+            }, 1000);
+        } else {
+            btnStart.textContent = "▶ บันทึกต่อ";
+            btnStart.style.backgroundColor = "#fbbf24";
+        }
+    });
+
     db.ref("sensor/live_payload").on("value", (snapshot) => {
         const data = snapshot.val();
         if (!data) return;
 
-        // 🛑 หากกด Pause (isRecording เป็น false) จะไม่ทำการอัปเดตหน้าจอเพื่อแช่แข็งผลค้างไว้
+        // หากบันทึกอยู่แต่ปัจจุบันถูกสั่ง Pause ไว้ จะล็อคการอัปเดตชั่วคราว
         if (timerCount > 0 && !isRecording) return;
 
         indicator.textContent = "● ระบบออนไลน์เรียลไทม์";
@@ -435,9 +457,6 @@
             if(calibratedRoll < minRoll) minRoll = calibratedRoll;
             if(calibratedRoll > maxRoll) maxRoll = calibratedRoll;
         }
-
-        let totalPitchROM = maxPitch - minPitch;
-        let totalRollROM = maxRoll - minRoll;
 
         document.getElementById("lblPitchROM").textContent = Math.abs(calibratedPitch).toFixed(1) + "°";
         document.getElementById("lblRollROM").textContent = Math.abs(calibratedRoll).toFixed(1) + "°";
@@ -490,65 +509,21 @@
             realtimeChart.data.datasets[0].data.push(latencyGap);
         }
         realtimeChart.update();
-
-        if (selectedMode === "accuracy") {
-            let errorBias = Math.abs(calibratedRoll);
-            if (errorBias < 0.5) {
-                resBox.textContent = "🎯 มุมเที่ยงตรงสูง (ผ่านเกณฑ์)";
-                resBox.className = "metric-value text-success";
-            } else {
-                resBox.textContent = "⚠️ ตรวจพบมุมเบี่ยงเบน";
-                resBox.className = "metric-value text-warning";
-            }
-        } else if (selectedMode === "stability") {
-            if (noiseLevel < 0.12) {
-                resBox.textContent = "⏳ สัญญาณนิ่งระดับมาตรฐาน";
-                resBox.className = "metric-value text-success";
-            } else {
-                resBox.textContent = "❌ สัญญาณแกว่งตัวสูง";
-                resBox.className = "metric-value text-danger";
-            }
-        } else {
-            if (latencyGap < 150 && currentPPS > 15) {
-                resBox.textContent = "🌐 โครงข่ายเรียลไทม์เสถียร";
-                resBox.className = "metric-value text-success";
-            } else {
-                resBox.textContent = "⚠️ ข้อมูลเครือข่ายล่าช้า";
-                resBox.className = "metric-value text-warning";
-            }
-        }
     });
 
-    // ⚡ ฟังก์ชันระบบปุ่มควบคุม Start / Pause
-    const btnStart = document.getElementById("btnStart");
+    // เมื่อกดปุ่ม Start/Pause ที่หน้าคอม -> ส่งค่าไปแชร์ที่ Firebase
     btnStart.onclick = () => {
-        if(isRecording) {
-            // สลับสถานะเป็น พักชั่วคราว (Pause)
-            isRecording = false;
-            clearInterval(clockInterval);
-            btnStart.textContent = "▶ บันทึกต่อ";
-            btnStart.style.backgroundColor = "#fbbf24"; // สีเหลืองแจ้งเตือน Pause
-        } else {
-            // สลับสถานะเป็น เริ่มทำงาน (Start / Resume)
-            isRecording = true;
-            btnStart.textContent = "⏸ พักการตรวจค่า";
-            btnStart.style.backgroundColor = "#ef4444"; // สีแดงสำหรับหยุดชั่วคราว
-            
-            clockInterval = setInterval(() => {
-                timerCount++;
-                document.getElementById("lblTimer").textContent = timerCount + " วินาที";
-            }, 1000);
-        }
+        db.ref("system/isRecording").set(!isRecording);
     };
 
-    // ⚡ ฟังก์ชันปุ่มรีเซ็ตเวลาและเซสชันแยกต่างหาก (Reset)
     document.getElementById("btnResetTimer").onclick = () => {
-        isRecording = false;
-        clearInterval(clockInterval);
-        timerCount = 0;
-        document.getElementById("lblTimer").textContent = "0 วินาที";
-        btnStart.textContent = "▶ เริ่มบันทึกค่า";
-        btnStart.style.backgroundColor = "#22c55e"; // กลับเป็นสีเขียวเริ่มต้น
+        db.ref("system/isRecording").set(false);
+        setTimeout(() => {
+            timerCount = 0;
+            document.getElementById("lblTimer").textContent = "0 วินาที";
+            btnStart.textContent = "▶ เริ่มบันทึกค่า";
+            btnStart.style.backgroundColor = "#22c55e";
+        }, 100);
     };
 
     document.getElementById("btnSave").onclick = () => {
@@ -556,9 +531,7 @@
         recordsList.push({ set: currentSetNum, duration: timerCount, mode: selectedMode, currentROM: currentRomText });
         
         let reportStr = "";
-        recordsList.forEach(r => {
-            reportStr += `ชุดที่ ${r.set} [${r.mode}] เวลา ${r.duration} วิ (Current ROM: ${r.currentROM})<br>`;
-        });
+        recordsList.forEach(r => { reportStr += `ชุดที่ ${r.set} [${r.mode}] เวลา ${r.duration} วิ (Current ROM: ${r.currentROM})<br>`; });
         document.getElementById("logOutput").innerHTML = reportStr;
         
         currentSetNum++;
@@ -568,9 +541,7 @@
     document.getElementById("btnExport").onclick = () => {
         if (recordsList.length === 0) return alert("กรุณากดบันทึกเซ็ตข้อมูลการวัดเก็บอย่างน้อย 1 ชุดข้อมูล");
         let csv = "Set,Duration(s),ValidationMode,Current_ROM\n";
-        recordsList.forEach(r => {
-            csv += `${r.set},${r.duration},${r.mode},${r.currentROM}\n`;
-        });
+        recordsList.forEach(r => { csv += `${r.set},${r.duration},${r.mode},${r.currentROM}\n`; });
         let blob = new Blob([csv], {type: "text/csv;charset=utf-8;"});
         let link = document.createElement("a");
         link.href = URL.createObjectURL(blob);
