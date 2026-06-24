@@ -3,160 +3,107 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BioMotion - Phone Sensor Node</title>
+    <title>BioMotion - Sensor Transmitter</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     <style>
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            background-color: #0f172a;
-            color: #f8fafc;
-            text-align: center;
-            padding: 30px 20px;
-            margin: 0;
+            font-family: '-apple-system', BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: #0f172a; color: #f8fafc; text-align: center; padding: 30px 15px; margin: 0;
         }
-        .container { max-width: 400px; margin: 0 auto; }
-        .title { color: #38bdf8; font-size: 22px; margin-bottom: 5px; font-weight: bold; }
         .status-card {
-            background-color: #1e293b; border: 1px solid #334155;
-            border-radius: 12px; padding: 20px; margin: 20px 0;
+            background: #1e293b; border-radius: 16px; padding: 25px; border: 1px solid #334155; margin-bottom: 20px;
         }
-        .btn-grant {
-            background-color: #38bdf8; color: #0f172a; border: none;
-            padding: 15px 30px; font-size: 16px; font-weight: bold;
-            border-radius: 8px; cursor: pointer; width: 100%; margin-bottom: 15px;
+        .title { color: #38bdf8; font-size: 22px; font-weight: bold; margin-bottom: 5px; }
+        .subtitle { color: #94a3b8; font-size: 14px; margin-bottom: 25px; }
+        .data-box { background: #0f172a; padding: 15px; border-radius: 10px; margin-top: 10px; border: 1px solid #1e293b; }
+        .label { font-size: 12px; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; }
+        .val { font-size: 28px; font-weight: bold; color: #f1f5f9; }
+        .btn-permission {
+            background: #38bdf8; color: #0f172a; border: none; padding: 15px 30px;
+            border-radius: 12px; font-size: 16px; font-weight: bold; cursor: pointer; display: none; width: 100%;
         }
-        .btn-control {
-            color: white; border: none; padding: 15px 30px; font-size: 16px; 
-            font-weight: bold; border-radius: 8px; cursor: pointer; width: 100%;
-            transition: background-color 0.2s ease; margin-bottom: 10px;
-        }
-        .btn-stop {
-            background-color: #64748b; color: white; border: none; padding: 12px 30px; 
-            font-size: 15px; font-weight: bold; border-radius: 8px; cursor: pointer; width: 100%;
-            transition: background-color 0.2s ease;
-        }
-        .val-display { font-size: 18px; font-weight: bold; margin: 10px 0; color: #cbd5e1; }
-        .label { color: #94a3b8; font-size: 13px; }
+        .indicator { width: 12px; height: 12px; border-radius: 50%; display: inline-block; background: #ef4444; margin-right: 8px; }
+        .active { background: #4ade80; box-shadow: 0 0 10px #4ade80; }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <div class="title">📱 BioMotion Sensor Transmitter</div>
-    <p style="color: #94a3b8; font-size: 14px;">โหมดจำลองยิงพิกัดข้อต่อแบบเคลื่อนไหวเรียลไทม์</p>
-
     <div class="status-card">
-        <button id="btnPermission" class="btn-grant">🔓 อนุญาตสิทธิ์เซนเซอร์การเคลื่อนไหว</button>
+        <div class="title">📲 ตัวส่งสัญญาณเซนเซอร์</div>
+        <div class="subtitle">BioMotion Mobile Node</div>
         
-        <button id="btnSyncControl" class="btn-control" style="background-color: #22c55e;">▶ เริ่มบันทึกค่า (จากมือถือ)</button>
+        <div style="display: flex; align-items: center; justify-content: center; margin-bottom: 20px;">
+            <span id="syncIndicator" class="indicator"></span>
+            <span id="syncStatus" style="font-size: 14px; color: #94a3b8;">กำลังตัดการเชื่อมต่อ</span>
+        </div>
+
+        <button id="btnGrant" class="btn-permission">🔑 อนุญาตใช้งาน Gyroscope / Motion</button>
+
+        <div class="data-box">
+            <div class="label">องศาแนวตั้ง (Pitch)</div>
+            <div id="valPitch" class="val">0.0°</div>
+        </div>
         
-        <button id="btnSyncStop" class="btn-stop">🔄 หยุดและรีเซ็ตเวลา</button>
+        <div class="data-box">
+            <div class="label">องศาแนวนอน (Roll)</div>
+            <div id="valRoll" class="val">0.0°</div>
+        </div>
     </div>
-
-    <div class="status-card">
-        <div class="val-display">Pitch: <span id="valPitch" style="color:#4ade80">0.0°</span></div>
-        <div class="val-display">Roll: <span id="valRoll" style="color:#fbbf24">0.0°</span></div>
-        <div class="val-display">Yaw: <span id="valYaw" style="color:#38bdf8">0.0°</span></div>
-    </div>
-
-    <div class="label" id="pktStatus">สถานะ: กำลังรอสิทธิ์การเข้าถึงอุปกรณ์...</div>
-</div>
 
 <script>
-    const firebaseConfig = {
-        databaseURL: "https://llllllll-3c932-default-rtdb.asia-southeast1.firebasedatabase.app/" 
-    };
-    firebase.initializeApp(firebaseConfig);
+    const firebaseConfig = { databaseURL: "https://llllllll-3c932-default-rtdb.asia-southeast1.firebasedatabase.app/" };
+    if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
     const db = firebase.database();
 
-    let motionData = { pitch: 0, roll: 0, yaw: 0, ax: 0, ay: 0, az: 0 };
-    let isGlobalRecording = false;
+    const syncIndicator = document.getElementById("syncIndicator");
+    const syncStatus = document.getElementById("syncStatus");
+    const btnGrant = document.getElementById("btnGrant");
 
-    const btnSyncControl = document.getElementById("btnSyncControl");
-    const btnSyncStop = document.getElementById("btnSyncStop");
+    function initSensorStream() {
+        window.addEventListener('deviceorientation', (event) => {
+            // คำนวณ Mapping ให้ตรงกับรูปแบบระนาบโครงสร้างเว็บแผงควบคุมหลัก
+            let pitch = event.beta;  // ก้ม-เงย (-180 ถึง 180)
+            let roll = event.gamma;  // เอียงซ้าย-ขวา (-90 ถึง 90)
+            let yaw = event.alpha;   // ทิศทางหัวลูกศร (0 ถึง 360)
 
-    // 🌐 ตรวจจับการเปลี่ยนแปลงสถานะบันทึกค่าจาก Firebase
-    db.ref("system/isRecording").on("value", (snapshot) => {
-        const remoteState = snapshot.val();
-        if (remoteState === null) return;
+            if (pitch !== null && roll !== null) {
+                // อัปเดตข้อมูลขึ้นไปยัง Node หลักบน Firebase เพื่อส่งต่อแดชบอร์ดคอมฯ
+                db.ref("sensor/live_payload").set({
+                    pitch: parseFloat(pitch),
+                    roll: parseFloat(roll),
+                    yaw: parseFloat(yaw || 0),
+                    timestamp: Date.now()
+                });
 
-        isGlobalRecording = remoteState;
-        if (isGlobalRecording) {
-            btnSyncControl.textContent = "⏸ พักการตรวจค่า";
-            btnSyncControl.style.backgroundColor = "#ef4444"; // เปลี่ยนเป็นสีแดงเมื่อกำลังบันทึก
-        } else {
-            btnSyncControl.textContent = "▶ บันทึกต่อ";
-            btnSyncControl.style.backgroundColor = "#fbbf24"; // เปลี่ยนเป็นสีเหลืองเมื่อถูก Pause
-        }
-    });
-
-    // ตรวจจับสัญญาณการกด Reset รีเซ็ตระบบ
-    db.ref("system/resetSignal").on("value", (snapshot) => {
-        const signal = snapshot.val();
-        if (signal === true) {
-            btnSyncControl.textContent = "▶ เริ่มบันทึกค่า";
-            btnSyncControl.style.backgroundColor = "#22c55e";
-        }
-    });
-
-    // เมื่อกดปุ่ม เริ่ม/พัก บนมือถือ
-    btnSyncControl.onclick = () => {
-        db.ref("system/resetSignal").set(false); // ยกเลิกสถานะรีเซ็ตก่อนหน้า
-        db.ref("system/isRecording").set(!isGlobalRecording);
-    };
-
-    // เมื่อกดปุ่มหยุดบันทึก/รีเซ็ต บนมือถือ
-    btnSyncStop.onclick = () => {
-        db.ref("system/isRecording").set(false);
-        db.ref("system/resetSignal").set(true); // ส่งสัญญาณให้คอมพิวเตอร์รู้ว่าให้รีเซ็ตเวลาเป็น 0
-    };
-
-    document.getElementById("btnPermission").onclick = function() {
-        if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
-            DeviceOrientationEvent.requestPermission()
-                .then(response => {
-                    if (response === 'granted') { initSensors(); } else { alert('สิทธิ์การใช้งานถูกปฏิเสธ'); }
-                }).catch(console.error);
-        } else {
-            initSensors();
-        }
-    };
-
-    function initSensors() {
-        document.getElementById("btnPermission").style.display = "none";
-        document.getElementById("pktStatus").textContent = "● กำลังส่งพิกัดข้อมูลเซนเซอร์...";
-
-        window.addEventListener('deviceorientation', (e) => {
-            motionData.pitch = e.beta || 0;
-            motionData.roll = e.gamma || 0;
-            motionData.yaw = e.alpha || 0;
-
-            document.getElementById("valPitch").textContent = motionData.pitch.toFixed(1) + "°";
-            document.getElementById("valRoll").textContent = motionData.roll.toFixed(1) + "°";
-            document.getElementById("valYaw").textContent = motionData.yaw.toFixed(1) + "°";
-
-            sendPayload();
-        });
-
-        window.addEventListener('devicemotion', (e) => {
-            let acc = e.accelerationIncludingGravity || { x: 0, y: 0, z: 0 };
-            motionData.ax = acc.x || 0;
-            motionData.ay = acc.y || 0;
-            motionData.az = acc.z || 0;
+                document.getElementById("valPitch").textContent = pitch.toFixed(1) + "°";
+                document.getElementById("valRoll").textContent = roll.toFixed(1) + "°";
+                
+                syncIndicator.classList.add("active");
+                syncStatus.textContent = "เชื่อมต่อระบบส่งข้อมูลสดแล้ว";
+                syncStatus.style.color = "#4ade80";
+            }
         });
     }
 
-    function sendPayload() {
-        db.ref("sensor/live_payload").set({
-            pitch: motionData.pitch,
-            roll: motionData.roll,
-            yaw: motionData.yaw,
-            ax: motionData.ax,
-            ay: motionData.ay,
-            az: motionData.az,
-            timestamp: Date.now()
-        });
+    // รองรับเงื่อนไขความปลอดภัยและสิทธิ์การเข้าถึงบนระบบ iOS 13+
+    if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+        btnGrant.style.display = "block";
+        btnGrant.onclick = () => {
+            DeviceOrientationEvent.requestPermission()
+                .then(permissionState => {
+                    if (permissionState === 'granted') {
+                        btnGrant.style.display = "none";
+                        initSensorStream();
+                    } else {
+                        alert('ระบบไม่ได้รับอนุญาตให้ใช้เซนเซอร์วัดความเอียงเครื่อง');
+                    }
+                })
+                .catch(console.error);
+        };
+    } else {
+        // หากเป็น Android หรือบราวเซอร์ทั่วไปสามารถรันสตรีมส่งค่าได้ทันที
+        initSensorStream();
     }
 </script>
 </body>
