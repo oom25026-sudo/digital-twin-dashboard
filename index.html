@@ -34,7 +34,7 @@
         }
         .grid-layout { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; }
         .card-panel { background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 20px; margin-bottom: 20px; }
-        .status-badge { background: #0284c7; color: white; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: bold; }
+        .status-badge { background: #16a34a; color: white; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: bold; }
         
         .metrics-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-top: 15px; }
         .metrics-grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-top: 15px; }
@@ -66,7 +66,6 @@
         .legend-item { display: flex; align-items: center; gap: 5px; }
         .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
 
-        /* UI ส่วนแถบวัดช่วงการเคลื่อนไหว (ROM Bar) */
         .rom-bar-container { background: #0f172a; border: 1px solid #334155; border-radius: 6px; padding: 10px; margin-top: 10px; }
         .rom-bar-label { font-size: 11px; color: #94a3b8; display: flex; justify-content: space-between; margin-bottom: 4px; }
         .rom-progress-bg { background: #1e293b; height: 8px; border-radius: 4px; overflow: hidden; position: relative; }
@@ -98,7 +97,7 @@
             <div class="card-panel">
                 <div style="display: flex; justify-content: space-between; align-items: center;">
                     <span style="font-weight: bold;">แบบจำลองสมาร์ตโฟน 3 มิติ (Digital Twin Mobile Mesh)</span>
-                    <span id="currentStatusIndicator" class="status-badge">กำลังรอการเชื่อมต่อ...</span>
+                    <span id="currentStatusIndicator" class="status-badge" style="background-color: #64748b;">กำลังรอการเชื่อมต่อ...</span>
                 </div>
                 <div id="canvas3d" style="margin-top: 15px;"></div>
                 <div class="axis-legend">
@@ -110,7 +109,6 @@
 
             <div class="card-panel" style="border-left: 4px solid #4ade80;">
                 <h3 style="margin: 0; color: #4ade80; font-size: 16px;">📊 เครื่องมือวิเคราะห์องศาการเคลื่อนไหวสูงสุด (Range of Motion Tracker)</h3>
-                
                 <div class="metrics-grid-2">
                     <div class="metric-box">
                         <div style="font-size: 12px; color: #94a3b8;">ช่วงก้ม-เงยรวม (Pitch ROM)</div>
@@ -161,7 +159,7 @@
             <div class="card-panel">
                 <div style="display: flex; justify-content: space-between; align-items: center;">
                     <h3 style="margin: 0; color: #38bdf8; font-size: 16px;">🔄 ค่าพิกัดมุมองศาจากเซนเซอร์ (Raw Orientation)</h3>
-                    <span id="romFlexion" class="text-success" style="font-weight: bold;">Max ROM: 0.0°</span>
+                    <span id="romFlexion" class="text-success" style="font-weight: 800; background: #064e3b; padding: 4px 10px; border-radius: 4px;">Max Absolute ROM: 0.0°</span>
                 </div>
                 <div class="metrics-grid">
                     <div class="metric-box">
@@ -247,16 +245,18 @@
     let selectedMode = "accuracy";
     let isRecording = false, timerCount = 0, clockInterval;
     let recordsList = [], currentSetNum = 0; 
-    let pitchHistory = [], maxRomValue = 0.0;
+    let pitchHistory = [];
+    let maxAbsoluteROM = 0.0; // เก็บค่าองศาสะสมสูงสุดอย่างอิสเทรนด์ตามมาตรฐานสากล
     let packetCount = 0, lastPpsCheck = Date.now(), currentPPS = 0;
 
-    // --- Variables สำหรับคำนวณช่วงการเคลื่อนไหวรวม (ROM Tracker) ---
     let minPitch = 0, maxPitch = 0;
     let minRoll = 0, maxRoll = 0;
     let firstPayloadReceived = false;
 
     function resetROMValues() {
         firstPayloadReceived = false;
+        maxAbsoluteROM = 0.0;
+        document.getElementById("romFlexion").textContent = "Max Absolute ROM: 0.0°";
         document.getElementById("lblPitchROM").textContent = "0.0°";
         document.getElementById("lblRollROM").textContent = "0.0°";
         document.getElementById("lblMinPitch").textContent = "Min: 0°";
@@ -281,7 +281,6 @@
         network: "🌐 เช็กอัตราการส่งแพ็กเก็ตข้อมูลต่อวินาที (PPS) และความหน่วงการเดินทางข้อมูลผ่านระบบ Cloud (Latency) เพื่อให้มั่นใจในการตอบสนอง"
     };
 
-    // ระบบกราฟเรียลไทม์
     const ctx = document.getElementById('realtimeChart').getContext('2d');
     const maxDataPoints = 30;
     const chartLabels = Array(maxDataPoints).fill('');
@@ -330,7 +329,6 @@
         return Math.sqrt(sumSqDiff / samples.length);
     }
 
-    // === 📱 สร้างโมเดลจำลองรูปทรงสมาร์ตโฟนสมจริงใน Three.js ===
     const stage = document.getElementById("canvas3d");
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x0f172a);
@@ -352,27 +350,23 @@
     const objectGroup = new THREE.Group();
     scene.add(objectGroup);
 
-    // 1. โครงบอดี้ตัวเครื่องภายนอก (Chassis)
     const bodyGeom = new THREE.BoxGeometry(1.3, 2.4, 0.12);
     const bodyMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.4, metalness: 0.6 });
     const phoneBody = new THREE.Mesh(bodyGeom, bodyMat);
     objectGroup.add(phoneBody);
 
-    // 2. แผ่นหน้าจอแสดงผลด้านหน้า
     const screenGeom = new THREE.PlaneGeometry(1.2, 2.1);
     const screenMat = new THREE.MeshStandardMaterial({ color: 0x020617, roughness: 0.1, metalness: 0.9 });
     const phoneScreen = new THREE.Mesh(screenGeom, screenMat);
     phoneScreen.position.z = 0.061; 
     objectGroup.add(phoneScreen);
 
-    // 3. ปุ่มโฮมจำลองระบุฝั่งด้านล่าง
     const buttonGeom = new THREE.RingGeometry(0.04, 0.07, 16);
     const buttonMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8, side: THREE.DoubleSide });
     const homeButton = new THREE.Mesh(buttonGeom, buttonMat);
     homeButton.position.set(0, -1.15, 0.062);
     objectGroup.add(homeButton);
 
-    // ระบบลูกศรชี้พิกัดแกน
     const arrowLength = 2.0; 
     const arrowX = new THREE.ArrowHelper(new THREE.Vector3(1, 0, 0), new THREE.Vector3(0, 0, 0), arrowLength, 0xff4444, 0.3, 0.15);
     const arrowY = new THREE.ArrowHelper(new THREE.Vector3(0, 1, 0), new THREE.Vector3(0, 0, 0), arrowLength, 0x22c55e, 0.3, 0.15);
@@ -384,7 +378,6 @@
     function render() { requestAnimationFrame(render); renderer.render(scene, camera); }
     render();
 
-    // ดักฟัง Firebase เรียลไทม์
     db.ref("sensor/live_payload").on("value", (snapshot) => {
         const data = snapshot.val();
         if (!data) return;
@@ -410,12 +403,10 @@
         const noiseLevel = evalStdDev(pitchHistory);
         document.getElementById("lblNoise").textContent = noiseLevel.toFixed(3) + "°";
 
-        // แสดงผลค่าดิบ
         document.getElementById("lblPitch").textContent = data.pitch.toFixed(1) + "°";
         document.getElementById("lblRoll").textContent = data.roll.toFixed(1) + "°";
         document.getElementById("lblYaw").textContent = data.yaw.toFixed(1) + "°";
 
-        // === 📊 คำนวณช่วงรวมของหัวข้อ Range of Motion (ROM) ===
         if(!firstPayloadReceived) {
             minPitch = data.pitch; maxPitch = data.pitch;
             minRoll = data.roll; maxRoll = data.roll;
@@ -438,28 +429,28 @@
         document.getElementById("lblMinRoll").textContent = "Min: " + minRoll.toFixed(1) + "°";
         document.getElementById("lblMaxRoll").textContent = "Max: " + maxRoll.toFixed(1) + "°";
 
-        // อัปเดต Progress Bar (เทียบสเกลเคลื่อนไหวสูงสุดเฉลี่ยที่ 180 องศา)
         document.getElementById("barPitch").style.width = Math.min(100, (totalPitchROM / 180) * 100) + "%";
         document.getElementById("barRoll").style.width = Math.min(100, (totalRollROM / 180) * 100) + "%";
 
-
-        // 📐 คำนวณองศาการยก และ องศาการเอียงเพิ่มเติม
         let elevationVal = Math.abs(data.pitch); 
         let tiltVal = data.roll;              
 
         document.getElementById("lblElevation").textContent = elevationVal.toFixed(1) + "°";
         document.getElementById("lblTilt").textContent = (tiltVal > 0 ? "ขวา " : "ซ้าย ") + Math.abs(tiltVal).toFixed(1) + "°";
 
-        if(elevationVal > maxRomValue) {
-            maxRomValue = elevationVal;
-            document.getElementById("romFlexion").textContent = `Max ROM: ${maxRomValue.toFixed(1)}°`;
+        // === 🔬 ส่วนคำนวณหา Max Absolute ROM แบบอิสระตามมาตรฐานสากล (3D Vector Space) ===
+        // คำนวณหาความเอียงสุทธิจากจุดศูนย์กลางแนวราบ (Absolute Angular Deviation) 
+        let currentAbsoluteDeviation = Math.sqrt(Math.pow(data.pitch, 2) + Math.pow(data.roll, 2));
+        
+        if(currentAbsoluteDeviation > maxAbsoluteROM) {
+            maxAbsoluteROM = currentAbsoluteDeviation;
+            document.getElementById("romFlexion").textContent = `Max Absolute ROM: ${maxAbsoluteROM.toFixed(1)}°`;
         }
 
         document.getElementById("lblAx").textContent = data.ax.toFixed(2);
         document.getElementById("lblAy").textContent = data.ay.toFixed(2);
         document.getElementById("lblAz").textContent = data.az.toFixed(2);
 
-        // หมุนโมเดล 3D
         objectGroup.rotation.set(
             data.pitch * (Math.PI / 180),
             data.roll * (Math.PI / 180),
@@ -482,7 +473,7 @@
         if (selectedMode === "accuracy") {
             let errorBias = Math.abs(data.roll);
             if (errorBias < 0.5) {
-                resBox.textContent = "🎯 มุมเที่ยงตรงสูง (ผ่านเกณฑ์)";
+                resBox.textContent = "🎯 มุมเที่งตรงสูง (ผ่านเกณฑ์)";
                 resBox.className = "metric-value text-success";
             } else {
                 resBox.textContent = "⚠️ ตรวจพบมุมเบี่ยงเบน";
@@ -524,13 +515,12 @@
     };
 
     document.getElementById("btnSave").onclick = () => {
-        let pRom = document.getElementById("lblPitchROM").textContent;
-        let rRom = document.getElementById("lblRollROM").textContent;
-        recordsList.push({ set: currentSetNum, duration: timerCount, mode: selectedMode, pitchROM: pRom, rollROM: rRom });
+        let absoluteRomText = document.getElementById("romFlexion").textContent.replace("Max Absolute ROM: ", "");
+        recordsList.push({ set: currentSetNum, duration: timerCount, mode: selectedMode, absoluteROM: absoluteRomText });
         
         let reportStr = "";
         recordsList.forEach(r => {
-            reportStr += `ชุดที่ ${r.set} [${r.mode}] เวลา ${r.duration} วิ (Pitch ROM: ${r.pitchROM} / Roll ROM: ${r.rollROM})<br>`;
+            reportStr += `ชุดที่ ${r.set} [${r.mode}] เวลา ${r.duration} วิ (Max Absolute ROM: ${r.absoluteROM})<br>`;
         });
         document.getElementById("logOutput").innerHTML = reportStr;
         
@@ -540,14 +530,14 @@
 
     document.getElementById("btnExport").onclick = () => {
         if (recordsList.length === 0) return alert("กรุณากดบันทึกเซ็ตข้อมูลการวัดเก็บอย่างน้อย 1 ชุดข้อมูล");
-        let csv = "Set,Duration(s),ValidationMode,Pitch_ROM,Roll_ROM\n";
+        let csv = "Set,Duration(s),ValidationMode,Max_Absolute_ROM\n";
         recordsList.forEach(r => {
-            csv += `${r.set},${r.duration},${r.mode},${r.pitchROM},${r.rollROM}\n`;
+            csv += `${r.set},${r.duration},${r.mode},${r.absoluteROM}\n`;
         });
         let blob = new Blob([csv], {type: "text/csv;charset=utf-8;"});
         let link = document.createElement("a");
         link.href = URL.createObjectURL(blob);
-        link.download = "biomotion_rom_validation_report.csv";
+        link.download = "biomotion_absolute_rom_report.csv";
         link.click();
     };
 
