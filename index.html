@@ -36,8 +36,11 @@
         .card-panel { background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 20px; margin-bottom: 20px; }
         .status-badge { background: #0284c7; color: white; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: bold; }
         
+        /* ปรับให้รองรับแถวละ 2 หรือ 3 กล่องอย่างสมดุล */
         .metrics-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-top: 15px; }
+        .metrics-grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-top: 15px; }
         .metric-box { background: #0f172a; padding: 12px; border-radius: 8px; border: 1px solid #334155; text-align: center; }
+        .metric-box.highlight { border-color: #38bdf8; background: linear-gradient(180deg, #0f172a, #1e293b); }
         .metric-value { font-size: 24px; font-weight: bold; color: #f1f5f9; margin-top: 5px; }
         
         .text-success { color: #4ade80 !important; }
@@ -97,6 +100,23 @@
                 </div>
             </div>
 
+            <!-- เพิ่มโซนแสดงผล "องศาการยก และ องศาการเอียง" เด่นชัดด้านบนกราฟ -->
+            <div class="card-panel" style="border-left: 4px solid #38bdf8;">
+                <h3 style="margin: 0; color: #38bdf8; font-size: 16px;">📐 ดัชนีการเคลื่อนไหวหลัก (Biomechanics Motion Indices)</h3>
+                <div class="metrics-grid-2">
+                    <div class="metric-box highlight">
+                        <div style="font-size: 13px; color: #38bdf8; font-weight: bold;">🏋️‍♂️ องศาการยกตัว (Elevation Angle)</div>
+                        <div id="lblElevation" class="metric-value" style="font-size: 32px; color: #38bdf8;">0.0°</div>
+                        <div style="font-size: 11px; color: #64748b; margin-top: 4px;">มุมเงยสัมบูรณ์จากแนวราบ</div>
+                    </div>
+                    <div class="metric-box highlight">
+                        <div style="font-size: 13px; color: #fbbf24; font-weight: bold;">🤸‍♂️ องศาการเอียงเครื่อง (Lateral Tilt Angle)</div>
+                        <div id="lblTilt" class="metric-value" style="font-size: 32px; color: #fbbf24;">0.0°</div>
+                        <div style="font-size: 11px; color: #64748b; margin-top: 4px;">มุมเบี่ยงเบนซ้าย-ขวา</div>
+                    </div>
+                </div>
+            </div>
+
             <div class="card-panel">
                 <h3 style="margin: 0; color: #38bdf8; font-size: 16px;">📈 กราฟวิเคราะห์พฤติกรรมข้อมูลเรียลไทม์</h3>
                 <div class="chart-container">
@@ -106,7 +126,7 @@
 
             <div class="card-panel">
                 <div style="display: flex; justify-content: space-between; align-items: center;">
-                    <h3 style="margin: 0; color: #38bdf8; font-size: 16px;">🔄 ค่าพิกัดมุมองศาปัจจุบัน (Orientation)</h3>
+                    <h3 style="margin: 0; color: #38bdf8; font-size: 16px;">🔄 ค่าพิกัดมุมองศาจากเซนเซอร์ (Raw Orientation)</h3>
                     <span id="romFlexion" class="text-success" style="font-weight: bold;">Max ROM: 0.0°</span>
                 </div>
                 <div class="metrics-grid">
@@ -219,8 +239,8 @@
         data: {
             labels: chartLabels,
             datasets: [
-                { label: 'Pitch Angle (°)', data: Array(maxDataPoints).fill(0), borderColor: '#38bdf8', backgroundColor: 'rgba(56, 189, 248, 0.1)', borderWidth: 2, tension: 0.3, fill: true },
-                { label: 'Roll Angle (°)', data: Array(maxDataPoints).fill(0), borderColor: '#fbbf24', borderWidth: 1.5, tension: 0.3, fill: false }
+                { label: 'Elevation (องศาการยก)', data: Array(maxDataPoints).fill(0), borderColor: '#38bdf8', backgroundColor: 'rgba(56, 189, 248, 0.1)', borderWidth: 2, tension: 0.3, fill: true },
+                { label: 'Tilt (องศาการเอียง)', data: Array(maxDataPoints).fill(0), borderColor: '#fbbf24', borderWidth: 1.5, tension: 0.3, fill: false }
             ]
         },
         options: {
@@ -235,8 +255,8 @@
         selectedMode = e.target.value;
         modeDesc.textContent = modeDetails[selectedMode];
         if(selectedMode === "accuracy") {
-            realtimeChart.data.datasets[0].label = 'Pitch Angle (°)';
-            realtimeChart.data.datasets[1].label = 'Roll Angle (°)';
+            realtimeChart.data.datasets[0].label = 'Elevation (องศาการยก)';
+            realtimeChart.data.datasets[1].label = 'Tilt (องศาการเอียง)';
         } else if(selectedMode === "stability") {
             realtimeChart.data.datasets[0].label = 'Noise Level (StdDev)';
             realtimeChart.data.datasets[1].label = '';
@@ -258,7 +278,7 @@
         return Math.sqrt(sumSqDiff / samples.length);
     }
 
-    // === 📱 🛠️ สร้างโมเดลจำลองรูปทรงสมาร์ตโฟนสมจริงใน Three.js ===
+    // === 📱 สร้างโมเดลจำลองรูปทรงสมาร์ตโฟนสมจริงใน Three.js ===
     const stage = document.getElementById("canvas3d");
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x0f172a);
@@ -271,38 +291,36 @@
     renderer.setSize(stage.clientWidth, 260);
     stage.appendChild(renderer.domElement);
 
-    // ไฟส่องสว่างเพื่อให้โมเดลมีมิติและเงาสะท้อนสวยงาม
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
     scene.add(ambientLight);
     const dirLight = new THREE.DirectionalLight(0xffffff, 0.5);
     dirLight.position.set(5, 10, 7);
     scene.add(dirLight);
 
-    // กลุ่มวัตถุหลักที่จะหมุน (ขยับตามข้อมูลมือถือจริง)
     const objectGroup = new THREE.Group();
     scene.add(objectGroup);
 
-    // 1. โครงบอดี้ตัวเครื่องภายนอก (Smartphone Body Chassis)
+    // 1. โครงบอดี้ตัวเครื่องภายนอก (Chassis)
     const bodyGeom = new THREE.BoxGeometry(1.3, 2.4, 0.12);
     const bodyMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.4, metalness: 0.6 });
     const phoneBody = new THREE.Mesh(bodyGeom, bodyMat);
     objectGroup.add(phoneBody);
 
-    // 2. แผ่นหน้าจอแสดงผลด้านหน้า (Smartphone Screen)
+    // 2. แผ่นหน้าจอแสดงผลด้านหน้า
     const screenGeom = new THREE.PlaneGeometry(1.2, 2.1);
     const screenMat = new THREE.MeshStandardMaterial({ color: 0x020617, roughness: 0.1, metalness: 0.9 });
     const phoneScreen = new THREE.Mesh(screenGeom, screenMat);
-    phoneScreen.position.z = 0.061; // เลื่อนมาอยู่บนผิวหน้าของบอดี้ตัวเครื่องเล็กน้อย
+    phoneScreen.position.z = 0.061; 
     objectGroup.add(phoneScreen);
 
-    // 3. ปุ่มโฮมจำลองใต้หน้าจอ (Home Button Indicator) เพื่อระบุฝั่งด้านล่างเครื่อง
+    // 3. ปุ่มโฮมจำลองระบุฝั่งด้านล่าง
     const buttonGeom = new THREE.RingGeometry(0.04, 0.07, 16);
     const buttonMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8, side: THREE.DoubleSide });
     const homeButton = new THREE.Mesh(buttonGeom, buttonMat);
     homeButton.position.set(0, -1.15, 0.062);
     objectGroup.add(homeButton);
 
-    // ✨ ติดตั้งระบบลูกศรชี้พิกัดแกน (XYZ) ตรงกลางวัตถุมือถือ
+    // ระบบลูกศรชี้พิกัดแกน
     const arrowLength = 2.0; 
     const arrowX = new THREE.ArrowHelper(new THREE.Vector3(1, 0, 0), new THREE.Vector3(0, 0, 0), arrowLength, 0xff4444, 0.3, 0.15);
     const arrowY = new THREE.ArrowHelper(new THREE.Vector3(0, 1, 0), new THREE.Vector3(0, 0, 0), arrowLength, 0x22c55e, 0.3, 0.15);
@@ -314,7 +332,7 @@
     function render() { requestAnimationFrame(render); renderer.render(scene, camera); }
     render();
 
-    // ส่วนเชื่อมต่อและดักฟัง Firebase เรียลไทม์
+    // ดักฟัง Firebase เรียลไทม์
     db.ref("sensor/live_payload").on("value", (snapshot) => {
         const data = snapshot.val();
         if (!data) return;
@@ -340,13 +358,20 @@
         const noiseLevel = evalStdDev(pitchHistory);
         document.getElementById("lblNoise").textContent = noiseLevel.toFixed(3) + "°";
 
+        // แสดงผลค่าดิบ
         document.getElementById("lblPitch").textContent = data.pitch.toFixed(1) + "°";
         document.getElementById("lblRoll").textContent = data.roll.toFixed(1) + "°";
         document.getElementById("lblYaw").textContent = data.yaw.toFixed(1) + "°";
 
-        let absPitch = Math.abs(data.pitch);
-        if(absPitch > maxRomValue) {
-            maxRomValue = absPitch;
+        // === 📐 คำนวณองศาการยก และ องศาการเอียงเพิ่มเติม ===
+        let elevationVal = Math.abs(data.pitch); // คำนวณองศาการยกตัวจากระนาบราบสัมบูรณ์
+        let tiltVal = data.roll;              // ดึงค่าน้ำหนักการเอียงซ้ายขวาออกมาชัดเจน
+
+        document.getElementById("lblElevation").textContent = elevationVal.toFixed(1) + "°";
+        document.getElementById("lblTilt").textContent = (tiltVal > 0 ? "ขวา " : "ซ้าย ") + Math.abs(tiltVal).toFixed(1) + "°";
+
+        if(elevationVal > maxRomValue) {
+            maxRomValue = elevationVal;
             document.getElementById("romFlexion").textContent = `Max ROM: ${maxRomValue.toFixed(1)}°`;
         }
 
@@ -354,7 +379,7 @@
         document.getElementById("lblAy").textContent = data.ay.toFixed(2);
         document.getElementById("lblAz").textContent = data.az.toFixed(2);
 
-        // 📱 สั่งให้โมเดลรูปทรงมือถือหมุนตามองศาจริงจากไจโรสโคป
+        // หมุนโมเดล 3D
         objectGroup.rotation.set(
             data.pitch * (Math.PI / 180),
             data.roll * (Math.PI / 180),
@@ -364,9 +389,9 @@
 
         realtimeChart.data.datasets[0].data.shift();
         if(selectedMode === "accuracy") {
-            realtimeChart.data.datasets[0].data.push(data.pitch);
+            realtimeChart.data.datasets[0].data.push(elevationVal); // เอากล่องยกแสดงบนเส้นกราฟหลักแทน
             realtimeChart.data.datasets[1].data.shift();
-            realtimeChart.data.datasets[1].data.push(data.roll);
+            realtimeChart.data.datasets[1].data.push(tiltVal);      // แสดงองศาเอียงบนกราฟเส้นรอง
         } else if(selectedMode === "stability") {
             realtimeChart.data.datasets[0].data.push(noiseLevel);
         } else {
@@ -419,13 +444,14 @@
     };
 
     document.getElementById("btnSave").onclick = () => {
+        let elevationText = document.getElementById("lblElevation").textContent;
+        let tiltText = document.getElementById("lblTilt").textContent;
         let p = document.getElementById("lblPitch").textContent;
-        let ax = document.getElementById("lblAx").textContent;
-        recordsList.push({ set: currentSetNum, duration: timerCount, mode: selectedMode, pitch: p, accelX: ax });
+        recordsList.push({ set: currentSetNum, duration: timerCount, mode: selectedMode, elevation: elevationText, tilt: tiltText, rawPitch: p });
         
         let reportStr = "";
         recordsList.forEach(r => {
-            reportStr += `ชุดที่ ${r.set} [${r.mode}] เวลา ${r.duration} วินาที (มุมฝังตัว: ${r.pitch} / ความเร่ง X: ${r.accelX})<br>`;
+            reportStr += `ชุดที่ ${r.set} [${r.mode}] เวลา ${r.duration} วิ (ยก: ${r.elevation} / เอียง: ${r.tilt})<br>`;
         });
         document.getElementById("logOutput").innerHTML = reportStr;
         
@@ -435,14 +461,14 @@
 
     document.getElementById("btnExport").onclick = () => {
         if (recordsList.length === 0) return alert("กรุณากดบันทึกเซ็ตข้อมูลการวัดเก็บอย่างน้อย 1 ชุดข้อมูล");
-        let csv = "Set,Duration(s),ValidationMode,CapturedPitch,CapturedAccelX\n";
+        let csv = "Set,Duration(s),ValidationMode,ElevationAngle,TiltAngle,RawPitch\n";
         recordsList.forEach(r => {
-            csv += `${r.set},${r.duration},${r.mode},${r.pitch},${r.accelX}\n`;
+            csv += `${r.set},${r.duration},${r.mode},${r.elevation},${r.tilt},${r.rawPitch}\n`;
         });
         let blob = new Blob([csv], {type: "text/csv;charset=utf-8;"});
         let link = document.createElement("a");
         link.href = URL.createObjectURL(blob);
-        link.download = "biomotion_full_validation.csv";
+        link.download = "biomotion_elevation_tilt_report.csv";
         link.click();
     };
 
