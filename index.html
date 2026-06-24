@@ -3,154 +3,82 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BioMotion - Digital Twin Validation System</title>
+    <title>BioMotion - Digital Twin & Validation Dashboard</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #0f172a; /* เปลี่ยนโทนสีให้เป็นแบบดาร์กธีมแนววิทยาศาสตร์ ไม่ซ้ำของเดิม */
+            background-color: #0f172a;
             color: #f8fafc;
             margin: 0;
             padding: 20px;
         }
-        .app-container {
-            max-width: 1100px;
-            margin: 0 auto;
-        }
+        .app-container { max-width: 1200px; margin: 0 auto; }
         .header-panel {
             background: linear-gradient(135deg, #1e293b, #0f172a);
-            padding: 20px;
-            border-radius: 12px;
-            border: 1px solid #334155;
-            margin-bottom: 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+            padding: 20px; border-radius: 12px; border: 1px solid #334155;
+            margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;
         }
-        .main-title {
-            margin: 0;
-            font-size: 24px;
-            color: #38bdf8;
-            font-weight: 800;
-        }
-        /* --- กล่องเลือกโหมดการประเมิน --- */
+        .main-title { margin: 0; font-size: 24px; color: #38bdf8; font-weight: 800; }
         .validation-selector-card {
-            background: #1e293b;
-            padding: 15px 20px;
-            border-radius: 12px;
-            border: 1px solid #334155;
-            margin-bottom: 20px;
+            background: #1e293b; padding: 15px 20px; border-radius: 12px;
+            border: 1px solid #334155; margin-bottom: 20px;
         }
         .select-input {
-            background: #0f172a;
-            color: #38bdf8;
-            border: 1px solid #334155;
-            padding: 10px;
-            border-radius: 6px;
-            font-size: 15px;
-            font-weight: bold;
-            width: 100%;
-            cursor: pointer;
+            background: #0f172a; color: #38bdf8; border: 1px solid #334155;
+            padding: 10px; border-radius: 6px; font-size: 15px; font-weight: bold; width: 100%; cursor: pointer;
         }
-        .grid-layout {
-            display: grid;
-            grid-template-columns: 2fr 1fr;
-            gap: 20px;
-        }
-        .card-panel {
-            background: #1e293b;
-            border: 1px solid #334155;
-            border-radius: 12px;
-            padding: 20px;
-            margin-bottom: 20px;
-        }
-        /* --- หน้าจอแสดงผลผลลัพธ์มาตรฐาน --- */
-        .status-badge {
-            background: #0284c7;
-            color: white;
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: bold;
-        }
-        .metrics-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 15px;
-            margin-top: 15px;
-        }
-        .metric-box {
-            background: #0f172a;
-            padding: 15px;
-            border-radius: 8px;
-            border: 1px solid #334155;
-            text-align: center;
-        }
-        .metric-value {
-            font-size: 28px;
-            font-weight: bold;
-            color: #f1f5f9;
-            margin: 5px 0;
-        }
+        .grid-layout { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; }
+        .card-panel { background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 20px; margin-bottom: 20px; }
+        .status-badge { background: #0284c7; color: white; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: bold; }
+        
+        .metrics-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-top: 15px; }
+        .metric-box { background: #0f172a; padding: 12px; border-radius: 8px; border: 1px solid #334155; text-align: center; }
+        .metric-value { font-size: 24px; font-weight: bold; color: #f1f5f9; margin-top: 5px; }
+        
         .text-success { color: #4ade80 !important; }
         .text-warning { color: #fbbf24 !important; }
         .text-danger { color: #f87171 !important; }
         
-        #canvas3d {
-            width: 100%;
-            height: 320px;
-            background-color: #0f172a;
-            border-radius: 8px;
-            border: 1px solid #334155;
-        }
+        #canvas3d { width: 100%; height: 260px; background-color: #0f172a; border-radius: 8px; border: 1px solid #334155; }
+        .chart-container { position: relative; height: 220px; width: 100%; margin-top: 10px; }
+        
         .action-btn {
-            background: #38bdf8;
-            color: #0f172a;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 6px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: 0.2s;
+            background: #38bdf8; color: #0f172a; border: none; padding: 10px 20px;
+            border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.2s;
         }
         .action-btn:hover { background: #0ea5e9; }
         .action-btn.secondary { background: #475569; color: white; }
         
-        /* Modal Window */
         .modal {
-            display: none;
-            position: fixed;
-            top:0; left:0; width:100%; height:100%;
-            background: rgba(0,0,0,0.7);
-            align-items: center; justify-content: center;
-            z-index: 99;
+            display: none; position: fixed; top:0; left:0; width:100%; height:100%;
+            background: rgba(0,0,0,0.7); align-items: center; justify-content: center; z-index: 99;
         }
-        .modal-content {
-            background: #1e293b;
-            padding: 25px;
-            border-radius: 12px;
-            text-align: center;
-            border: 1px solid #334155;
-        }
+        .modal-content { background: #1e293b; padding: 25px; border-radius: 12px; text-align: center; border: 1px solid #334155; }
+        
+        .axis-legend { display: flex; gap: 15px; font-size: 12px; margin-top: 8px; justify-content: center; }
+        .legend-item { display: flex; align-items: center; gap: 5px; }
+        .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
     </style>
 </head>
 <body>
 
 <div class="app-container">
     <div class="header-panel">
-        <h1 class="main-title">🧬 BioMotion Twin Validation</h1>
+        <h1 class="main-title">🧬 BioMotion Twin & Validation System</h1>
         <button id="btnOpenQR" class="action-btn">📱 เชื่อมต่อตัวส่งเซนเซอร์</button>
     </div>
 
     <div class="validation-selector-card">
         <label style="font-size: 13px; color: #94a3b8; display: block; margin-bottom: 8px; font-weight: bold;">เลือกตรวจสอบความน่าเชื่อถือระบบในด้าน:</label>
         <select id="validationModeSelect" class="select-input">
-            <option value="accuracy">🎯 ตรวจสอบความแม่นยำของมุมเคลื่อนไหว (Static Range of Motion Accuracy)</option>
-            <option value="stability">⏳ ตรวจสอบสัญญาณรบกวนและความสว่างของเซนเซอร์ (Dynamic Noise & Jitter)</option>
-            <option value="network">🌐 ตรวจสอบความเร็วและการขาดหายของโครงข่าย (Network Reliability & Latency)</option>
+            <option value="accuracy">🎯 ตรวจสอบความแม่นยำองศาเคลื่อนไหว (Static & Dynamic ROM Accuracy)</option>
+            <option value="stability">⏳ ตรวจสอบสัญญาณรบกวนและความเสถียร (Noise & Jitter Analysis)</option>
+            <option value="network">🌐 ตรวจสอบความเร็วและการขาดหายของโครงข่าย (Network Latency & Reliability)</option>
         </select>
     </div>
 
@@ -158,52 +86,89 @@
         <div>
             <div class="card-panel">
                 <div style="display: flex; justify-content: space-between; align-items: center;">
-                    <span style="font-weight: bold;">แบบจำลองโครงสร้างวัตถุ 3 มิติ</span>
+                    <span style="font-weight: bold;">แบบจำลองสมาร์ตโฟน 3 มิติ (Digital Twin Mobile Mesh)</span>
                     <span id="currentStatusIndicator" class="status-badge">กำลังรอการเชื่อมต่อ...</span>
                 </div>
                 <div id="canvas3d" style="margin-top: 15px;"></div>
+                <div class="axis-legend">
+                    <div class="legend-item"><span class="dot" style="background-color: #ef4444;"></span> แกน X (Roll)</div>
+                    <div class="legend-item"><span class="dot" style="background-color: #22c55e;"></span> แกน Y (Yaw)</div>
+                    <div class="legend-item"><span class="dot" style="background-color: #3b82f6;"></span> แกน Z (Pitch)</div>
+                </div>
             </div>
 
             <div class="card-panel">
-                <h3>ผลการประเมินตามโหมดการตรวจสอบ</h3>
-                <div id="modeDescription" style="font-size: 14px; color: #94a3b8; margin-bottom: 15px;"></div>
-                
+                <h3 style="margin: 0; color: #38bdf8; font-size: 16px;">📈 กราฟวิเคราะห์พฤติกรรมข้อมูลเรียลไทม์</h3>
+                <div class="chart-container">
+                    <canvas id="realtimeChart"></canvas>
+                </div>
+            </div>
+
+            <div class="card-panel">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <h3 style="margin: 0; color: #38bdf8; font-size: 16px;">🔄 ค่าพิกัดมุมองศาปัจจุบัน (Orientation)</h3>
+                    <span id="romFlexion" class="text-success" style="font-weight: bold;">Max ROM: 0.0°</span>
+                </div>
                 <div class="metrics-grid">
                     <div class="metric-box">
-                        <div id="mLabel1" style="font-size: 12px; color: #94a3b8;">แกน X (Pitch)</div>
-                        <div id="mVal1" class="metric-value">0.0°</div>
+                        <div style="font-size: 12px; color: #94a3b8;">Pitch (ก้ม-เงย)</div>
+                        <div id="lblPitch" class="metric-value">0.0°</div>
                     </div>
                     <div class="metric-box">
-                        <div id="mLabel2" style="font-size: 12px; color: #94a3b8;">แกน Y (Roll)</div>
-                        <div id="mVal2" class="metric-value">0.0°</div>
+                        <div style="font-size: 12px; color: #94a3b8;">Roll (เอียงซ้าย-ขวา)</div>
+                        <div id="lblRoll" class="metric-value">0.0°</div>
                     </div>
                     <div class="metric-box">
-                        <div id="mLabel3" style="font-size: 12px; color: #94a3b8;">เกณฑ์ประเมิน</div>
-                        <div id="mVal3" class="metric-value" style="font-size: 18px;">--</div>
+                        <div style="font-size: 12px; color: #94a3b8;">Yaw (หมุนแนวราบ)</div>
+                        <div id="lblYaw" class="metric-value">0.0°</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card-panel">
+                <h3 style="margin: 0; color: #38bdf8; font-size: 16px;">🚀 ค่าความเร่งและแรงดึงดูด (Accelerometer)</h3>
+                <div class="metrics-grid">
+                    <div class="metric-box">
+                        <div style="font-size: 12px; color: #94a3b8;">แกน X (Linear X)</div>
+                        <div id="lblAx" class="metric-value">0.00</div>
+                    </div>
+                    <div class="metric-box">
+                        <div style="font-size: 12px; color: #94a3b8;">แกน Y (Linear Y)</div>
+                        <div id="lblAy" class="metric-value">0.00</div>
+                    </div>
+                    <div class="metric-box">
+                        <div style="font-size: 12px; color: #94a3b8;">แกน Z (Linear Z)</div>
+                        <div id="lblAz" class="metric-value">0.00</div>
                     </div>
                 </div>
             </div>
         </div>
 
         <div>
-            <div class="card-panel">
-                <h4 style="margin-top: 0; color: #38bdf8;">แผงวิเคราะห์คุณภาพข้อมูล</h4>
-                <p style="font-size: 13px; margin: 5px 0;">ความหน่วงเครือข่าย: <span id="lblGap" class="text-success">-- ms</span></p>
-                <p style="font-size: 13px; margin: 5px 0;">อัตราการส่งแพ็กเก็ต: <span id="lblPps">0</span> PPS</p>
-                <p style="font-size: 13px; margin: 5px 0;">สัญญาณรบกวนเฉลี่ย ($\sigma$): <span id="lblNoise">0.000°</span></p>
+            <div class="card-panel" style="border-left: 4px solid #38bdf8;">
+                <h4 style="margin-top: 0; color: #38bdf8;">📋 ผลวิเคราะห์ตามโหมดตรวจสอบ</h4>
+                <div id="modeDescription" style="font-size: 12px; color: #94a3b8; margin-bottom: 12px;"></div>
+                <div id="validationResultBox" class="metric-value" style="font-size: 22px; text-align: center; background: #0f172a; padding: 10px; border-radius: 6px;">--</div>
             </div>
 
             <div class="card-panel">
-                <h4 style="margin-top: 0;">การจัดเก็บเซสชันทดสอบ</h4>
-                <div style="font-size: 13px; margin-bottom: 10px;">เซ็ตทดสอบปัจจุบัน: <span id="lblSet" style="font-weight: bold; color: #38bdf8;">1</span></div>
-                <div style="font-size: 13px; margin-bottom: 15px;">เวลาที่บันทึกไปแล้ว: <span id="lblTimer" style="font-weight: bold;">0 วินาที</span></div>
+                <h4 style="margin-top: 0; color: #94a3b8;">⚙️ ข้อมูลตรวจสอบเครือข่ายและความเที่ยงตรง</h4>
+                <p style="font-size: 13px; margin: 6px 0;">ความหน่วงเครือข่าย (Latency): <span id="lblGap" class="text-success">-- ms</span></p>
+                <p style="font-size: 13px; margin: 6px 0;">อัตราการส่งแพ็กเก็ต: <span id="lblPps">0</span> PPS</p>
+                <p style="font-size: 13px; margin: 6px 0;">สัญญาณรบกวนมุม ($\sigma$ Noise): <span id="lblNoise">0.000°</span></p>
+            </div>
+
+            <div class="card-panel">
+                <h4 style="margin-top: 0;">⏱️ บันทึกเซสชันผลการทดสอบ</h4>
+                <div style="font-size: 13px; margin-bottom: 8px;">เซ็ตทดสอบปัจจุบัน: <span id="lblSet" style="font-weight: bold; color: #38bdf8;">0</span></div>
+                <div style="font-size: 13px; margin-bottom: 15px;">เวลาทดสอบ: <span id="lblTimer" style="font-weight: bold;">0 วินาที</span></div>
                 
                 <div style="display: flex; flex-direction: column; gap: 8px;">
                     <button id="btnStart" class="action-btn">● เริ่มการทดสอบ</button>
-                    <button id="btnSave" class="action-btn secondary">✓ บันทึกเซสชัน</button>
+                    <button id="btnSave" class="action-btn secondary">✓ บันทึกชุดข้อมูล</button>
                     <button id="btnExport" class="action-btn secondary" style="background:#0284c7;">↓ ส่งออกไฟล์มาตรฐาน (.CSV)</button>
                 </div>
-                <div id="logOutput" style="margin-top: 15px; font-size: 12px; color: #94a3b8; max-height: 120px; overflow-y: auto;"></div>
+                <div id="logOutput" style="margin-top: 15px; font-size: 11px; color: #94a3b8; max-height: 100px; overflow-y: auto; border-top: 1px solid #334155; padding-top: 10px;"></div>
             </div>
         </div>
     </div>
@@ -211,65 +176,81 @@
 
 <div id="qrModal" class="modal">
     <div class="modal-content">
-        <h3 style="color:#38bdf8; margin-top:0;">เชื่อมต่ออุปกรณ์ผู้ป่วย</h3>
-        <p style="font-size: 12px; color:#94a3b8;">ใช้สมาร์ตโฟนสแกนเพื่อเปลี่ยนอุปกรณ์เป็นตัวยิงสัญญาณเซนเซอร์</p>
+        <h3 style="color:#38bdf8; margin-top:0;">เชื่อมต่อโทรศัพท์มือถือ</h3>
+        <p style="font-size: 12px; color:#94a3b8;">เปิดสแกน QR Code นี้บนมือถือเพื่อเริ่มยิงพิกัดเซนเซอร์เข้ามาในระบบ</p>
         <div id="qrcode" style="display:flex; justify-content:center; margin: 20px 0;"></div>
         <button id="btnCloseQR" class="action-btn secondary">ปิดหน้าต่าง</button>
     </div>
 </div>
 
 <script>
-    // การตั้งค่าการเชื่อมต่อฐานข้อมูลความปลอดภัย
     const firebaseConfig = {
         databaseURL: "https://llllllll-3c932-default-rtdb.asia-southeast1.firebasedatabase.app/" 
     };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // ตัวแปรเก็บประวัติการทำงานหลัก
     let selectedMode = "accuracy";
     let isRecording = false, timerCount = 0, clockInterval;
-    let recordsList = [], currentSetNum = 1;
-    let pitchHistory = [], lastPacketTimestamp = Date.now();
+    let recordsList = [], currentSetNum = 0; 
+    let pitchHistory = [], maxRomValue = 0.0;
+    let packetCount = 0, lastPpsCheck = Date.now(), currentPPS = 0;
 
-    // อ้างอิง DOM Elements
     const modeSelect = document.getElementById("validationModeSelect");
     const modeDesc = document.getElementById("modeDescription");
     const indicator = document.getElementById("currentStatusIndicator");
+    const resBox = document.getElementById("validationResultBox");
 
-    // โครงสร้างข้อความอธิบายความสำคัญของการตรวจสอบแต่ละโหมด
+    document.getElementById("lblSet").textContent = currentSetNum;
+
     const modeDetails = {
-        accuracy: "🎯 ตรวจสอบเกณฑ์การเอียงและวัดพิสัยความเคลื่อนไหว (ROM) ในสภาวะอยู่นิ่งเพื่อยืนยันว่าไม่มีการลาดเอียงเกินข้อกำหนดทางกายภาพบำบัด (ค่าเบี่ยงเบนยอมรับได้ไม่เกิน ±0.5°)",
-        stability: "⏳ ตรวจสอบระดับการแกว่งและความถี่ของเซนเซอร์เพื่อวิเคราะห์หาค่า Noise ทศนิยม 3 ตำแหน่ง ตัวกรองจะปรับการตอบสนองตามความเสถียรของสัญญาณโดยอัตโนมัติ",
-        network: "🌐 วัดความน่าเชื่อถือในการกระจายข้อมูลข้ามระบบเครือข่าย เพื่อให้แน่ใจว่าค่าข้อมูลไม่เกิดความล่าช้าสะสม (Latency) เกินระดับมาตรฐานควบคุมที่กำหนดไว้"
+        accuracy: "🎯 ตรวจจับการเคลื่อนไหว (ROM) ในระนาบเพื่อตรวจสอบความถูกต้องขององศาเทียบกับข้อกำหนดทางกายภาพบำบัด (เกณฑ์คลาดเคลื่อนผ่านมาตรฐานต้องไม่เกิน ±0.5°)",
+        stability: "⏳ ตรวจสอบการแกว่งตัวของเซนเซอร์แอนดรอยด์/ไอโฟน หาค่าเบี่ยงเบนมาตรฐาน (Noise) เพื่อคำนวณความนิ่งของโครงสร้างข้อมูลเรียลไทม์",
+        network: "🌐 เช็กอัตราการส่งแพ็กเก็ตข้อมูลต่อวินาที (PPS) และความหน่วงการเดินทางข้อมูลผ่านระบบ Cloud (Latency) เพื่อให้มั่นใจในการตอบสนอง"
     };
 
-    // อัปเดตข้อมูลรายละเอียดเมื่อเปลี่ยนตัวเลือกตรวจสอบ
+    // ระบบกราฟเรียลไทม์
+    const ctx = document.getElementById('realtimeChart').getContext('2d');
+    const maxDataPoints = 30;
+    const chartLabels = Array(maxDataPoints).fill('');
+    
+    const realtimeChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: chartLabels,
+            datasets: [
+                { label: 'Pitch Angle (°)', data: Array(maxDataPoints).fill(0), borderColor: '#38bdf8', backgroundColor: 'rgba(56, 189, 248, 0.1)', borderWidth: 2, tension: 0.3, fill: true },
+                { label: 'Roll Angle (°)', data: Array(maxDataPoints).fill(0), borderColor: '#fbbf24', borderWidth: 1.5, tension: 0.3, fill: false }
+            ]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: { legend: { labels: { color: '#94a3b8', font: { size: 11 } } } },
+            scales: { x: { display: false }, y: { grid: { color: '#334155' }, ticks: { color: '#94a3b8' } } },
+            animation: { duration: 0 }
+        }
+    });
+
     modeSelect.onchange = (e) => {
         selectedMode = e.target.value;
-        updateViewStructure();
-        db.ref("system/currentValidationMode").set(selectedMode);
-    };
-
-    function updateViewStructure() {
         modeDesc.textContent = modeDetails[selectedMode];
         if(selectedMode === "accuracy") {
-            document.getElementById("mLabel1").textContent = "มุมก้ม-เงย (Pitch)";
-            document.getElementById("mLabel2").textContent = "มุมเอียงซ้าย-ขวา (Roll)";
-            document.getElementById("mLabel3").textContent = "เกณฑ์ความแม่นยำ";
-        } else if (selectedMode === "stability") {
-            document.getElementById("mLabel1").textContent = "สัญญาณดิบ (Raw X)";
-            document.getElementById("mLabel2").textContent = "ผ่านตัวกรอง (Filtered)";
-            document.getElementById("mLabel3").textContent = "ระดับ Noise";
+            realtimeChart.data.datasets[0].label = 'Pitch Angle (°)';
+            realtimeChart.data.datasets[1].label = 'Roll Angle (°)';
+        } else if(selectedMode === "stability") {
+            realtimeChart.data.datasets[0].label = 'Noise Level (StdDev)';
+            realtimeChart.data.datasets[1].label = '';
+            realtimeChart.data.datasets[1].data = Array(maxDataPoints).fill(null);
         } else {
-            document.getElementById("mLabel1").textContent = "ความหน่วงเฉลี่ย";
-            document.getElementById("mLabel2").textContent = "แพ็กเก็ตที่ได้รับ";
-            document.getElementById("mLabel3").textContent = "สถานะการส่ง";
+            realtimeChart.data.datasets[0].label = 'Latency (ms)';
+            realtimeChart.data.datasets[1].label = '';
+            realtimeChart.data.datasets[1].data = Array(maxDataPoints).fill(null);
         }
-    }
-    updateViewStructure();
+        realtimeChart.update();
+        db.ref("system/currentValidationMode").set(selectedMode);
+    };
+    modeDesc.textContent = modeDetails[selectedMode];
 
-    // คำนวณค่าทางสถิติเพื่อหา Noise (Standard Deviation)
     function evalStdDev(samples) {
         if (samples.length === 0) return 0;
         const mean = samples.reduce((s, v) => s + v, 0) / samples.length;
@@ -277,83 +258,150 @@
         return Math.sqrt(sumSqDiff / samples.length);
     }
 
-    // === ติดตั้งและเตรียมการแสดงผลกราฟิก 3D (Three.js) ===
+    // === 📱 🛠️ สร้างโมเดลจำลองรูปทรงสมาร์ตโฟนสมจริงใน Three.js ===
     const stage = document.getElementById("canvas3d");
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x0f172a);
-    const camera = new THREE.PerspectiveCamera(45, stage.clientWidth / 320, 0.1, 100);
-    camera.position.set(0, 0, 5);
+    
+    const camera = new THREE.PerspectiveCamera(45, stage.clientWidth / 260, 0.1, 100);
+    camera.position.set(2.5, 2.5, 4.0); 
+    camera.lookAt(0, 0, 0);
+
     const renderer = new THREE.WebGLRenderer({ antialias: true });
-    renderer.setSize(stage.clientWidth, 320);
+    renderer.setSize(stage.clientWidth, 260);
     stage.appendChild(renderer.domElement);
 
-    // สร้างกล่องสี่เหลี่ยมแทนโทรศัพท์เพื่อให้ง่ายและมีเอกลักษณ์แนว Matrix
+    // ไฟส่องสว่างเพื่อให้โมเดลมีมิติและเงาสะท้อนสวยงาม
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+    scene.add(ambientLight);
+    const dirLight = new THREE.DirectionalLight(0xffffff, 0.5);
+    dirLight.position.set(5, 10, 7);
+    scene.add(dirLight);
+
+    // กลุ่มวัตถุหลักที่จะหมุน (ขยับตามข้อมูลมือถือจริง)
     const objectGroup = new THREE.Group();
     scene.add(objectGroup);
-    const coreMesh = new THREE.Mesh(
-        new THREE.BoxGeometry(1.6, 3.2, 0.2),
-        new THREE.MeshBasicMaterial({ color: 0x0ea5e9, wireframe: true }) // เปลี่ยนเป็นลายเส้น Grid ทันสมัย
-    );
-    objectGroup.add(coreMesh);
 
-    function renderLoop() {
-        requestAnimationFrame(renderLoop);
-        renderer.render(scene, camera);
-    }
-    renderLoop();
+    // 1. โครงบอดี้ตัวเครื่องภายนอก (Smartphone Body Chassis)
+    const bodyGeom = new THREE.BoxGeometry(1.3, 2.4, 0.12);
+    const bodyMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.4, metalness: 0.6 });
+    const phoneBody = new THREE.Mesh(bodyGeom, bodyMat);
+    objectGroup.add(phoneBody);
 
-    // ดึงข้อมูลเรียลไทม์เพื่อตรวจสอบจากฐานข้อมูลกลาง
-    db.ref("sensor/live_data").on("value", (snapshot) => {
-        const payload = snapshot.val();
-        if (!payload) return;
+    // 2. แผ่นหน้าจอแสดงผลด้านหน้า (Smartphone Screen)
+    const screenGeom = new THREE.PlaneGeometry(1.2, 2.1);
+    const screenMat = new THREE.MeshStandardMaterial({ color: 0x020617, roughness: 0.1, metalness: 0.9 });
+    const phoneScreen = new THREE.Mesh(screenGeom, screenMat);
+    phoneScreen.position.z = 0.061; // เลื่อนมาอยู่บนผิวหน้าของบอดี้ตัวเครื่องเล็กน้อย
+    objectGroup.add(phoneScreen);
 
-        indicator.textContent = "● กำลังทำงานออนไลน์";
+    // 3. ปุ่มโฮมจำลองใต้หน้าจอ (Home Button Indicator) เพื่อระบุฝั่งด้านล่างเครื่อง
+    const buttonGeom = new THREE.RingGeometry(0.04, 0.07, 16);
+    const buttonMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8, side: THREE.DoubleSide });
+    const homeButton = new THREE.Mesh(buttonGeom, buttonMat);
+    homeButton.position.set(0, -1.15, 0.062);
+    objectGroup.add(homeButton);
+
+    // ✨ ติดตั้งระบบลูกศรชี้พิกัดแกน (XYZ) ตรงกลางวัตถุมือถือ
+    const arrowLength = 2.0; 
+    const arrowX = new THREE.ArrowHelper(new THREE.Vector3(1, 0, 0), new THREE.Vector3(0, 0, 0), arrowLength, 0xff4444, 0.3, 0.15);
+    const arrowY = new THREE.ArrowHelper(new THREE.Vector3(0, 1, 0), new THREE.Vector3(0, 0, 0), arrowLength, 0x22c55e, 0.3, 0.15);
+    const arrowZ = new THREE.ArrowHelper(new THREE.Vector3(0, 0, 1), new THREE.Vector3(0, 0, 0), arrowLength, 0x3b82f6, 0.3, 0.15);
+    objectGroup.add(arrowX);
+    objectGroup.add(arrowY);
+    objectGroup.add(arrowZ);
+
+    function render() { requestAnimationFrame(render); renderer.render(scene, camera); }
+    render();
+
+    // ส่วนเชื่อมต่อและดักฟัง Firebase เรียลไทม์
+    db.ref("sensor/live_payload").on("value", (snapshot) => {
+        const data = snapshot.val();
+        if (!data) return;
+
+        indicator.textContent = "● ระบบออนไลน์เรียลไทม์";
         indicator.style.backgroundColor = "#16a34a";
 
-        const tickTime = Date.now();
-        const latencyGap = tickTime - payload.timestamp;
-        
-        // เพิ่มข้อมูลเพื่อหาค่าความสม่ำเสมอ
-        pitchHistory.push(payload.pitch);
-        if(pitchHistory.length > 25) pitchHistory.shift();
-        const noiseLevel = evalStdDev(pitchHistory);
-
-        // แสดงผลหน้าวิเคราะห์ภาพรวมคุณภาพ
-        document.getElementById("lblGap").textContent = latencyGap + " ms";
-        document.getElementById("lblGap").className = latencyGap > 150 ? "text-danger" : "text-success";
-        document.getElementById("lblNoise").textContent = noiseLevel.toFixed(3) + "°";
-
-        // แสดงผลตามโหมดที่ตัวผู้ใช้เลือกตรวจสอบ
-        if(selectedMode === "accuracy") {
-            document.getElementById("mVal1").textContent = payload.pitch.toFixed(1) + "°";
-            document.getElementById("mVal2").textContent = payload.roll.toFixed(1) + "°";
-            
-            let bias = Math.abs(payload.pitch);
-            let statusText = bias < 0.5 ? "✓ ดีเยี่ยม" : "⚠️ เกินมาตรฐาน";
-            document.getElementById("mVal3").textContent = statusText;
-            document.getElementById("mVal3").className = bias < 0.5 ? "metric-value text-success" : "metric-value text-danger";
-        } else if(selectedMode === "stability") {
-            document.getElementById("mVal1").textContent = payload.pitch.toFixed(2) + "°";
-            document.getElementById("mVal2").textContent = (payload.pitch * 0.95).toFixed(2) + "°"; // ฟิลเตอร์จำลอง
-            document.getElementById("mVal3").textContent = noiseLevel < 0.1 ? "เสถียรสูง" : "สั่นไหว";
-            document.getElementById("mVal3").className = noiseLevel < 0.1 ? "metric-value text-success" : "metric-value text-warning";
-        } else {
-            document.getElementById("mVal1").textContent = latencyGap + "ms";
-            document.getElementById("mVal2").textContent = "ตรวจสอบแล้ว";
-            document.getElementById("mVal3").textContent = latencyGap < 120 ? "เสถียร" : "หน่วง";
-            document.getElementById("mVal3").className = latencyGap < 120 ? "metric-value text-success" : "metric-value text-danger";
+        packetCount++;
+        const nowTime = Date.now();
+        if (nowTime - lastPpsCheck >= 1000) {
+            currentPPS = packetCount;
+            packetCount = 0;
+            lastPpsCheck = nowTime;
+            document.getElementById("lblPps").textContent = currentPPS;
         }
 
-        // หมุนโมเดลกราฟิกตามที่ได้รับมา
+        const latencyGap = nowTime - data.timestamp;
+        document.getElementById("lblGap").textContent = latencyGap + " ms";
+        document.getElementById("lblGap").className = latencyGap > 180 ? "text-danger" : "text-success";
+
+        pitchHistory.push(data.pitch);
+        if(pitchHistory.length > 30) pitchHistory.shift();
+        const noiseLevel = evalStdDev(pitchHistory);
+        document.getElementById("lblNoise").textContent = noiseLevel.toFixed(3) + "°";
+
+        document.getElementById("lblPitch").textContent = data.pitch.toFixed(1) + "°";
+        document.getElementById("lblRoll").textContent = data.roll.toFixed(1) + "°";
+        document.getElementById("lblYaw").textContent = data.yaw.toFixed(1) + "°";
+
+        let absPitch = Math.abs(data.pitch);
+        if(absPitch > maxRomValue) {
+            maxRomValue = absPitch;
+            document.getElementById("romFlexion").textContent = `Max ROM: ${maxRomValue.toFixed(1)}°`;
+        }
+
+        document.getElementById("lblAx").textContent = data.ax.toFixed(2);
+        document.getElementById("lblAy").textContent = data.ay.toFixed(2);
+        document.getElementById("lblAz").textContent = data.az.toFixed(2);
+
+        // 📱 สั่งให้โมเดลรูปทรงมือถือหมุนตามองศาจริงจากไจโรสโคป
         objectGroup.rotation.set(
-            payload.pitch * (Math.PI / 180),
-            payload.roll * (Math.PI / 180),
-            -payload.yaw * (Math.PI / 180),
+            data.pitch * (Math.PI / 180),
+            data.roll * (Math.PI / 180),
+            -data.yaw * (Math.PI / 180),
             'YXZ'
         );
+
+        realtimeChart.data.datasets[0].data.shift();
+        if(selectedMode === "accuracy") {
+            realtimeChart.data.datasets[0].data.push(data.pitch);
+            realtimeChart.data.datasets[1].data.shift();
+            realtimeChart.data.datasets[1].data.push(data.roll);
+        } else if(selectedMode === "stability") {
+            realtimeChart.data.datasets[0].data.push(noiseLevel);
+        } else {
+            realtimeChart.data.datasets[0].data.push(latencyGap);
+        }
+        realtimeChart.update();
+
+        if (selectedMode === "accuracy") {
+            let errorBias = Math.abs(data.roll);
+            if (errorBias < 0.5) {
+                resBox.textContent = "🎯 มุมเที่ยงตรงสูง (ผ่านเกณฑ์)";
+                resBox.className = "metric-value text-success";
+            } else {
+                resBox.textContent = "⚠️ ตรวจพบมุมเบี่ยงเบน";
+                resBox.className = "metric-value text-warning";
+            }
+        } else if (selectedMode === "stability") {
+            if (noiseLevel < 0.12) {
+                resBox.textContent = "⏳ สัญญาณนิ่งระดับมาตรฐาน";
+                resBox.className = "metric-value text-success";
+            } else {
+                resBox.textContent = "❌ สัญญาณแกว่งตัวสูง";
+                resBox.className = "metric-value text-danger";
+            }
+        } else {
+            if (latencyGap < 150 && currentPPS > 15) {
+                resBox.textContent = "🌐 โครงข่ายเรียลไทม์เสถียร";
+                resBox.className = "metric-value text-success";
+            } else {
+                resBox.textContent = "⚠️ ข้อมูลเครือข่ายล่าช้า";
+                resBox.className = "metric-value text-warning";
+            }
+        }
     });
 
-    // ส่วนการจัดการเวลากับเซสชันการทดสอบ
     document.getElementById("btnStart").onclick = () => {
         if(isRecording) {
             isRecording = false;
@@ -371,13 +419,13 @@
     };
 
     document.getElementById("btnSave").onclick = () => {
-        let pVal = document.getElementById("mVal1").textContent;
-        let rVal = document.getElementById("mVal2").textContent;
-        recordsList.push({ set: currentSetNum, duration: timerCount, mode: selectedMode, pitch: pVal, roll: rVal });
+        let p = document.getElementById("lblPitch").textContent;
+        let ax = document.getElementById("lblAx").textContent;
+        recordsList.push({ set: currentSetNum, duration: timerCount, mode: selectedMode, pitch: p, accelX: ax });
         
         let reportStr = "";
         recordsList.forEach(r => {
-            reportStr += `ชุดที่ ${r.set} [โหมด: ${r.mode}] ใช้เวลา ${r.duration} วินาที (มุม P:${r.pitch} R:${r.roll})<br>`;
+            reportStr += `ชุดที่ ${r.set} [${r.mode}] เวลา ${r.duration} วินาที (มุมฝังตัว: ${r.pitch} / ความเร่ง X: ${r.accelX})<br>`;
         });
         document.getElementById("logOutput").innerHTML = reportStr;
         
@@ -386,25 +434,24 @@
     };
 
     document.getElementById("btnExport").onclick = () => {
-        if (recordsList.length === 0) return alert("โปรดบันทึกเซ็ตทดสอบอย่างน้อย 1 ชุดก่อนส่งออก");
-        let csv = "Set,TimeDuration(s),TestMode,CapturedPitch,CapturedRoll\n";
+        if (recordsList.length === 0) return alert("กรุณากดบันทึกเซ็ตข้อมูลการวัดเก็บอย่างน้อย 1 ชุดข้อมูล");
+        let csv = "Set,Duration(s),ValidationMode,CapturedPitch,CapturedAccelX\n";
         recordsList.forEach(r => {
-            csv += `${r.set},${r.duration},${r.mode},${r.pitch},${r.roll}\n`;
+            csv += `${r.set},${r.duration},${r.mode},${r.pitch},${r.accelX}\n`;
         });
         let blob = new Blob([csv], {type: "text/csv;charset=utf-8;"});
-        let a = document.createElement("a");
-        a.href = URL.createObjectURL(blob);
-        a.download = "biomotion_validation_report.csv";
-        a.click();
+        let link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        link.download = "biomotion_full_validation.csv";
+        link.click();
     };
 
-    // เปิดปิดกล่องเครื่องมือสแกนสำหรับทดสอบร่วมกับอาจารย์
     const modal = document.getElementById("qrModal");
     document.getElementById("btnOpenQR").onclick = () => {
         modal.style.display = "flex";
         document.getElementById("qrcode").innerHTML = "";
-        let endpointUrl = window.location.href.substring(0, window.location.href.lastIndexOf("/")) + "/phone.html";
-        new QRCode(document.getElementById("qrcode"), { text: endpointUrl, width: 160, height: 160 });
+        let targetUrl = window.location.href.substring(0, window.location.href.lastIndexOf("/")) + "/phone.html";
+        new QRCode(document.getElementById("qrcode"), { text: targetUrl, width: 150, height: 150 });
     };
     document.getElementById("btnCloseQR").onclick = () => modal.style.display = "none";
 </script>
