@@ -163,7 +163,6 @@
 </div>
 
 <script>
-    // ป้องกันปัญหาการทำงานก่อน DOM พร้อมใช้งาน
     window.addEventListener('DOMContentLoaded', () => {
         const firebaseConfig = { databaseURL: "https://llllllll-3c932-default-rtdb.asia-southeast1.firebasedatabase.app/" };
         if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
@@ -182,6 +181,38 @@
         const lblSet = document.getElementById("lblSet");
         const modeSelect = document.getElementById("validationModeSelect");
 
+        // Initialize display set to 1
+        lblSet.textContent = currentSetNum;
+
+        // 📊 Setup Chart.js
+        const ctx = document.getElementById('realtimeChart').getContext('2d');
+        const realtimeChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: Array(20).fill(''),
+                datasets: [
+                    { label: 'Pitch (ก้ม-เงย)', borderColor: '#4ade80', data: Array(20).fill(0), fill: false, tension: 0.2, borderWidth: 2 },
+                    { label: 'Roll (เอียงข้าง)', borderColor: '#fbbf24', data: Array(20).fill(0), fill: false, tension: 0.2, borderWidth: 2 }
+                ]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                plugins: { legend: { labels: { color: '#94a3b8' } } },
+                scales: {
+                    x: { grid: { display: false } },
+                    y: { min: -90, max: 90, grid: { color: '#334155' }, ticks: { color: '#94a3b8' } }
+                }
+            }
+        });
+
+        function updateChartData(pitch, roll) {
+            realtimeChart.data.datasets[0].data.shift();
+            realtimeChart.data.datasets[0].data.push(pitch);
+            realtimeChart.data.datasets[1].data.shift();
+            realtimeChart.data.datasets[1].data.push(roll);
+            realtimeChart.update('none');
+        }
+
         function resetROMValues() {
             firstPayloadReceived = false;
             minPitch = 0; maxPitch = 0; minRoll = 0; maxRoll = 0;
@@ -193,18 +224,20 @@
             document.getElementById("lblMaxRoll").textContent = "Max: 0.0°";
             document.getElementById("barPitch").style.width = "0%";
             document.getElementById("barRoll").style.width = "0%";
+            db.ref("system/resetSignal").set(true);
+            setTimeout(() => db.ref("system/resetSignal").set(false), 500);
         }
         document.getElementById("btnResetROM").onclick = resetROMValues;
 
         modeSelect.onchange = (e) => { selectedMode = e.target.value; };
 
-        // 🌐 ติดตามสเตตัสจาก Firebase
+        // Realtime State Sync
         db.ref("system/isRecording").on("value", (snapshot) => {
             isRecording = snapshot.val() || false;
             clearInterval(clockInterval);
 
             if (isRecording) {
-                btnStart.textContent = "⏸ พักการทดสอบ";
+                btnStart.textContent = "⏸ หยุดค้างค่าการตรวจ";
                 btnStart.style.backgroundColor = "#ef4444";
                 btnStart.style.color = "#ffffff";
                 clockInterval = setInterval(() => {
@@ -226,14 +259,17 @@
             }
         });
 
+        // Sensor Stream Data Listener
         db.ref("sensor/live_payload").on("value", (snapshot) => {
             const data = snapshot.val();
             if (!data) return;
 
-            if (timerCount > 0 && !isRecording) return;
-
             let currentPitch = data.pitch || 0;
             let currentRoll = data.roll || 0;
+
+            updateChartData(currentPitch, currentRoll);
+
+            if (!isRecording) return; // Only process dynamic metrics while checking
 
             if (!firstPayloadReceived) {
                 minPitch = currentPitch; maxPitch = currentPitch;
@@ -270,7 +306,6 @@
         });
 
         btnStart.onclick = () => {
-            db.ref("system/resetSignal").set(false);
             db.ref("system/isRecording").set(!isRecording);
         };
 
@@ -280,8 +315,8 @@
                 pitchRom: lastLoggedPitchROM, rollRom: lastLoggedRollROM
             });
             let logHTML = "";
-            recordsList.forEach((r, idx) => {
-                logHTML += `ชุดที่ ${idx} [${r.mode}] เวลา ${r.duration} วิ (Pitch ROM: ${r.pitchRom}° / Roll ROM: ${r.rollRom}°)<br>`;
+            recordsList.forEach((r) => {
+                logHTML += `ชุดที่ ${r.set} [${r.mode}] เวลา ${r.duration} วิ (Pitch ROM: ${r.pitchRom}° / Roll ROM: ${r.rollRom}°)<br>`;
             });
             document.getElementById("logOutput").innerHTML = logHTML;
             currentSetNum++;
@@ -297,7 +332,7 @@
             link.href = URL.createObjectURL(blob); link.download = "biomotion_test_report.csv"; link.click();
         };
 
-        // 📐 ส่วนเริ่มต้นระบบ 3D Graphics
+        // 📐 THREE.js Setup
         let scene, camera, renderer, phoneMesh;
         const container3d = document.getElementById("canvas3d");
         if(container3d) {
@@ -308,8 +343,8 @@
             renderer.setSize(container3d.clientWidth, 260);
             container3d.appendChild(renderer.domElement);
             
-            const ambientLight = new THREE.AmbientLight(0xffffff, 0.6); scene.add(ambientLight);
-            const dirLight = new THREE.DirectionalLight(0xffffff, 0.8); dirLight.position.set(5, 5, 5); scene.add(dirLight);
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.7); scene.add(ambientLight);
+            const dirLight = new THREE.DirectionalLight(0xffffff, 0.6); dirLight.position.set(5, 5, 5); scene.add(dirLight);
 
             const bodyGeom = new THREE.BoxGeometry(1.3, 2.4, 0.15);
             const bodyMat = new THREE.MeshStandardMaterial({ color: 0x38bdf8, roughness: 0.3, metalness: 0.5 });
@@ -322,7 +357,9 @@
         document.getElementById("btnOpenQR").onclick = () => {
             document.getElementById("qrModal").style.display = "flex";
             document.getElementById("qrcode").innerHTML = "";
-            new QRCode(document.getElementById("qrcode"), { text: window.location.href.replace("index.html","") + "phone.html", width: 150, height: 150 });
+            let currentURL = window.location.href;
+            let targetURL = currentURL.substring(0, currentURL.lastIndexOf("/")) + "/phone.html";
+            new QRCode(document.getElementById("qrcode"), { text: targetURL, width: 150, height: 150 });
         };
         document.getElementById("btnCloseQR").onclick = () => { document.getElementById("qrModal").style.display = "none"; };
     });
