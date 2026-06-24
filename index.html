@@ -213,10 +213,13 @@
             <div class="card-panel">
                 <h4 style="margin-top: 0;">⏱️ บันทึกเซสชันผลการทดสอบ</h4>
                 <div style="font-size: 13px; margin-bottom: 8px;">เซ็ตทดสอบปัจจุบัน: <span id="lblSet" style="font-weight: bold; color: #38bdf8;">0</span></div>
-                <div style="font-size: 13px; margin-bottom: 15px;">เวลาทดสอบ: <span id="lblTimer" style="font-weight: bold;">0 วินาที</span></div>
+                <div style="font-size: 13px; margin-bottom: 15px;">เวลาทดสอบ: <span id="lblTimer" style="font-weight: bold; color:#4ade80;">0 วินาที</span></div>
                 
                 <div style="display: flex; flex-direction: column; gap: 8px;">
-                    <button id="btnStart" class="action-btn">● เริ่มการทดสอบ</button>
+                    <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 8px;">
+                        <button id="btnStart" class="action-btn" style="background-color: #22c55e; color: white;">▶ เริ่มบันทึกค่า</button>
+                        <button id="btnResetTimer" class="action-btn secondary" style="background-color: #64748b;">🔄 รีเซ็ต</button>
+                    </div>
                     <button id="btnSave" class="action-btn secondary">✓ บันทึกชุดข้อมูล</button>
                     <button id="btnExport" class="action-btn secondary" style="background:#0284c7;">↓ ส่งออกไฟล์มาตรฐาน (.CSV)</button>
                 </div>
@@ -385,6 +388,9 @@
         const data = snapshot.val();
         if (!data) return;
 
+        // 🛑 หากกด Pause (isRecording เป็น false) จะไม่ทำการอัปเดตหน้าจอเพื่อแช่แข็งผลค้างไว้
+        if (timerCount > 0 && !isRecording) return;
+
         indicator.textContent = "● ระบบออนไลน์เรียลไทม์";
         indicator.style.backgroundColor = "#16a34a";
 
@@ -433,7 +439,6 @@
         let totalPitchROM = maxPitch - minPitch;
         let totalRollROM = maxRoll - minRoll;
 
-        // ✨ ปรับแก้: ให้ตัวเลขหลักแสดงค่าเบี่ยงเบนปัจจุบันเรียลไทม์ ขยับขึ้นลงอิสระตามท่าทาง ไม่ค้างที่ค่าสูงสุด
         document.getElementById("lblPitchROM").textContent = Math.abs(calibratedPitch).toFixed(1) + "°";
         document.getElementById("lblRollROM").textContent = Math.abs(calibratedRoll).toFixed(1) + "°";
         
@@ -442,7 +447,6 @@
         document.getElementById("lblMinRoll").textContent = "Min: " + minRoll.toFixed(1) + "°";
         document.getElementById("lblMaxRoll").textContent = "Max: " + maxRoll.toFixed(1) + "°";
 
-        // แถบหลอดสเกลวิ่งขึ้นลงตามขนาดค่าเบี่ยงเบนในปัจจุบัน
         document.getElementById("barPitch").style.width = Math.min(100, (Math.abs(calibratedPitch) / 90) * 100) + "%";
         document.getElementById("barRoll").style.width = Math.min(100, (Math.abs(calibratedRoll) / 90) * 100) + "%";
 
@@ -461,7 +465,6 @@
         }
         document.getElementById("lblTilt").textContent = tiltDirectionText;
 
-        // ค่าผลรวมองศาสะสมสุทธิขยับขึ้น-ลงเรียลไทม์ (Max ROM บนการ์ด Raw Orientation)
         let currentAbsoluteDeviation = Math.sqrt(Math.pow(calibratedPitch, 2) + Math.pow(calibratedRoll, 2));
         document.getElementById("romFlexion").textContent = `Max ROM: ${currentAbsoluteDeviation.toFixed(1)}°`;
 
@@ -516,20 +519,36 @@
         }
     });
 
-    document.getElementById("btnStart").onclick = () => {
+    // ⚡ ฟังก์ชันระบบปุ่มควบคุม Start / Pause
+    const btnStart = document.getElementById("btnStart");
+    btnStart.onclick = () => {
         if(isRecording) {
+            // สลับสถานะเป็น พักชั่วคราว (Pause)
             isRecording = false;
             clearInterval(clockInterval);
-            document.getElementById("btnStart").textContent = "● เริ่มการทดสอบ";
+            btnStart.textContent = "▶ บันทึกต่อ";
+            btnStart.style.backgroundColor = "#fbbf24"; // สีเหลืองแจ้งเตือน Pause
         } else {
+            // สลับสถานะเป็น เริ่มทำงาน (Start / Resume)
             isRecording = true;
-            timerCount = 0;
-            document.getElementById("btnStart").textContent = "⏸ หยุดค้างค่าการตรวจ";
+            btnStart.textContent = "⏸ พักการตรวจค่า";
+            btnStart.style.backgroundColor = "#ef4444"; // สีแดงสำหรับหยุดชั่วคราว
+            
             clockInterval = setInterval(() => {
                 timerCount++;
                 document.getElementById("lblTimer").textContent = timerCount + " วินาที";
             }, 1000);
         }
+    };
+
+    // ⚡ ฟังก์ชันปุ่มรีเซ็ตเวลาและเซสชันแยกต่างหาก (Reset)
+    document.getElementById("btnResetTimer").onclick = () => {
+        isRecording = false;
+        clearInterval(clockInterval);
+        timerCount = 0;
+        document.getElementById("lblTimer").textContent = "0 วินาที";
+        btnStart.textContent = "▶ เริ่มบันทึกค่า";
+        btnStart.style.backgroundColor = "#22c55e"; // กลับเป็นสีเขียวเริ่มต้น
     };
 
     document.getElementById("btnSave").onclick = () => {
