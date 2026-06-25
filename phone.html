@@ -87,7 +87,6 @@
     </div>
 
 <script>
-    // ตั้งค่าพิกัดเซิร์ฟเวอร์ Firebase ของคุณ
     const firebaseConfig = { databaseURL: "https://llllllll-3c932-default-rtdb.asia-southeast1.firebasedatabase.app/" };
     if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
     const db = firebase.database();
@@ -99,7 +98,8 @@
 
     let isRecording = false;
 
-    // 🔴 คอยฟังสถานะการบันทึกจาก Firebase เพื่อให้ปุ่มบนมือถือ Sync ตามคอมพิวเตอร์
+    // 🔴 [สำคัญมาก] คอยดักฟังการเปลี่ยนแปลงจาก Firebase เสมอ! 
+    // หากคอมพิวเตอร์เปลี่ยนสถานะ หรือเรากดบนมือถือเอง ปุ่มจะเปลี่ยนไปตามฐานข้อมูล Realtime ทันที
     db.ref("system/isRecording").on("value", (snapshot) => {
         isRecording = snapshot.val() || false;
         if (isRecording) {
@@ -113,19 +113,17 @@
         }
     });
 
-    // เมื่อกดปุ่มบนมือถือ ให้สลับสถานะบนฐานข้อมูลไปหาคอมพิวเตอร์
+    // เมื่อกดปุ่มสั่งงานจากมือถือ -> ดันค่าสลับ (Toggle) ไปอัปเดตบน Firebase เสมอ
     btnControl.onclick = () => {
         db.ref("system/isRecording").set(!isRecording);
     };
 
-    // ฟังก์ชันเปิดการจับพิกัดเซนเซอร์ความเอียงเครื่อง
     function startStreaming() {
         window.addEventListener('deviceorientation', (event) => {
             let pVal = event.beta || 0;  
             let rVal = event.gamma || 0; 
             let yVal = event.alpha || 0; 
 
-            // ยิงข้อมูลพิกัดสดขึ้น Firebase
             db.ref("sensor/live_payload").set({
                 pitch: parseFloat(pVal),
                 roll: parseFloat(rVal),
@@ -133,14 +131,12 @@
                 timestamp: Date.now()
             });
             
-            // อัปเดตสถานะการส่งข้อมูลบนหน้าจอ
             syncDot.classList.add("active");
             syncText.textContent = "เชื่อมต่อและกำลังส่งข้อมูลสด";
             syncText.style.color = "#4ade80";
         });
     }
 
-    // จัดการระบบความปลอดภัยเปิดสิทธิ์ Gyroscope บน iOS
     if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
         btnPermission.style.display = "block";
         btnPermission.onclick = () => {
@@ -155,7 +151,6 @@
                 }).catch(console.error);
         };
     } else {
-        // อุปกรณ์ Android หรือบราวเซอร์ทั่วไปให้เปิดรันทันที
         startStreaming();
     }
 </script>
