@@ -40,27 +40,24 @@
             background: #4ade80; 
             box-shadow: 0 0 10px #4ade80; 
         }
-        .data-stream-box { 
-            background: #0f172a; 
-            padding: 15px; 
-            border-radius: 10px; 
-            margin-top: 15px; 
-            border: 1px solid #334155; 
-        }
-        .data-label { 
-            font-size: 11px; 
-            color: #64748b; 
-            text-transform: uppercase; 
-        }
-        .data-value { 
-            font-size: 32px; 
-            font-weight: bold; 
-            color: #f1f5f9; 
-            margin-top: 5px; 
+        .action-btn {
+            background: #38bdf8;
+            color: #0f172a;
+            border: none;
+            padding: 16px 20px;
+            border-radius: 12px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.2s;
+            font-size: 16px;
+            display: block;
+            width: 100%;
+            margin-top: 20px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
         }
         .btn-permission { 
-            background: #38bdf8; 
-            color: #0f172a; 
+            background: #a855f7; 
+            color: white; 
             border: none; 
             padding: 15px; 
             border-radius: 10px; 
@@ -79,26 +76,18 @@
         <div class="title">📲 BioMotion Sensor Node</div>
         <div style="color: #94a3b8; font-size: 14px; margin-bottom: 20px;">ฝั่งอุปกรณ์ส่งสัญญาณเซนเซอร์เคลื่อนไหว</div>
         
-        <div style="display: flex; align-items: center; justify-content: center; margin-bottom: 25px;">
+        <div style="display: flex; align-items: center; justify-content: center; margin-bottom: 15px;">
             <span id="syncDot" class="indicator-dot"></span>
             <span id="syncText" style="font-size: 14px; color: #94a3b8;">รอสตรีมพิกัดองศา...</span>
         </div>
 
         <button id="btnPermission" class="btn-permission">🔑 ยินยอมให้แอปเข้าถึงตัววัดความเอียง (Gyroscope)</button>
 
-        <div class="data-stream-box">
-            <div class="data-label">Pitch (ก้ม-เงย)</div>
-            <div id="txtPitch" class="data-value">0.0°</div>
-        </div>
-        
-        <div class="data-stream-box">
-            <div class="data-label">Roll (เอียงข้าง)</div>
-            <div id="txtRoll" class="data-value">0.0°</div>
-        </div>
+        <button id="btnControl" class="action-btn">• เริ่มการทดสอบ</button>
     </div>
 
 <script>
-    // ตั้งค่ากำหนดชี้พิกัดเซิร์ฟเวอร์แบบเดียวกับหน้าจอแดชบอร์ดคอมพิวเตอร์
+    // ตั้งค่าพิกัดเซิร์ฟเวอร์ Firebase ของคุณ
     const firebaseConfig = { databaseURL: "https://llllllll-3c932-default-rtdb.asia-southeast1.firebasedatabase.app/" };
     if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
     const db = firebase.database();
@@ -106,34 +95,52 @@
     const syncDot = document.getElementById("syncDot");
     const syncText = document.getElementById("syncText");
     const btnPermission = document.getElementById("btnPermission");
+    const btnControl = document.getElementById("btnControl");
 
-    // ฟังก์ชันเปิดการสแกนจับพิกัดระนาบเอียงเครื่องทางฮาร์ดแวร์มือถือ
+    let isRecording = false;
+
+    // 🔴 คอยฟังสถานะการบันทึกจาก Firebase เพื่อให้ปุ่มบนมือถือ Sync ตามคอมพิวเตอร์
+    db.ref("system/isRecording").on("value", (snapshot) => {
+        isRecording = snapshot.val() || false;
+        if (isRecording) {
+            btnControl.textContent = "⏸ หยุดค้างค่าการตรวจ";
+            btnControl.style.backgroundColor = "#0ea5e9";
+            btnControl.style.color = "#ffffff";
+        } else {
+            btnControl.textContent = "• เริ่มการทดสอบ";
+            btnControl.style.backgroundColor = "#38bdf8";
+            btnControl.style.color = "#0f172a";
+        }
+    });
+
+    // เมื่อกดปุ่มบนมือถือ ให้สลับสถานะบนฐานข้อมูลไปหาคอมพิวเตอร์
+    btnControl.onclick = () => {
+        db.ref("system/isRecording").set(!isRecording);
+    };
+
+    // ฟังก์ชันเปิดการจับพิกัดเซนเซอร์ความเอียงเครื่อง
     function startStreaming() {
         window.addEventListener('deviceorientation', (event) => {
-            let pVal = event.beta || 0;  // ทิศทางการก้มเงยรอบระนาบแกน X
-            let rVal = event.gamma || 0; // ทิศทางการเอียงตะแคงข้างรอบแกน Y
-            let yVal = event.alpha || 0; // ทิศทางเข็มทิศหันหัวแกนระนาบ Z
+            let pVal = event.beta || 0;  
+            let rVal = event.gamma || 0; 
+            let yVal = event.alpha || 0; 
 
-            // แพ็กข้อมูลตัวเลของศาเรียลไทม์บันทึกพิกัดส่งขึ้นไปยัง Firebase Database ทันที
+            // ยิงข้อมูลพิกัดสดขึ้น Firebase
             db.ref("sensor/live_payload").set({
                 pitch: parseFloat(pVal),
                 roll: parseFloat(rVal),
                 yaw: parseFloat(yVal),
                 timestamp: Date.now()
             });
-
-            // เขียนข้อความองศาสดๆ ลงไปบนหน้าจอมือถือให้ผู้ใช้ตรวจสอบ
-            document.getElementById("txtPitch").textContent = pVal.toFixed(1) + "°";
-            document.getElementById("txtRoll").textContent = rVal.toFixed(1) + "°";
             
-            // เปลี่ยนสีปุ่มสถานะไฟเชื่อมต่อเป็นสีเขียวเรืองแสงแจ่มแจ้งค้างไว้
+            // อัปเดตสถานะการส่งข้อมูลบนหน้าจอ
             syncDot.classList.add("active");
             syncText.textContent = "เชื่อมต่อและกำลังส่งข้อมูลสด";
             syncText.style.color = "#4ade80";
         });
     }
 
-    // ฟังก์ชันตรวจสอบความปลอดภัยเพื่อป้องกันการปิดกั้นสิทธิ์ไจโรสโคปบนอุปกรณ์โมบายล์
+    // จัดการระบบความปลอดภัยเปิดสิทธิ์ Gyroscope บน iOS
     if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
         btnPermission.style.display = "block";
         btnPermission.onclick = () => {
@@ -148,7 +155,7 @@
                 }).catch(console.error);
         };
     } else {
-        // หากเป็นโมบายล์ระบบ Android หรือหน้าเว็บทั่วไปให้เปิดรันทันทีโดยอัติโนมัติ
+        // อุปกรณ์ Android หรือบราวเซอร์ทั่วไปให้เปิดรันทันที
         startStreaming();
     }
 </script>
