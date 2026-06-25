@@ -55,6 +55,12 @@
             gap: 15px;
             margin-top: 15px;
         }
+        .metrics-grid-3 {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-top: 12px;
+        }
         .metric-box {
             background: #0f172a;
             padding: 15px;
@@ -67,12 +73,6 @@
             font-weight: bold;
             color: #f1f5f9;
             margin-top: 5px;
-        }
-        .text-success {
-            color: #4ade80 !important;
-        }
-        .text-warning {
-            color: #fbbf24 !important;
         }
         .canvas-container {
             position: relative;
@@ -89,7 +89,6 @@
             height: 100%;
             background-color: #0f172a;
         }
-        /* ป้ายแจ้งสถานะระนาบมุมซ้ายบนของจอ 3D */
         .status-badge {
             position: absolute;
             top: 15px;
@@ -156,10 +155,36 @@
             height: 12px;
             border-radius: 50%;
         }
+        .rom-bar-container {
+            background: #0f172a;
+            border: 1px solid #334155;
+            border-radius: 6px;
+            padding: 8px;
+            margin-top: 8px;
+        }
+        .rom-bar-label {
+            font-size: 11px;
+            color: #94a3b8;
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 4px;
+        }
+        .rom-progress-bg {
+            background: #1e293b;
+            height: 6px;
+            border-radius: 3px;
+            overflow: hidden;
+        }
+        .rom-progress-fill {
+            background: linear-gradient(90deg, #22c55e, #4ade80);
+            height: 100%;
+            width: 0%;
+            transition: width 0.2s ease;
+        }
         .modal {
             display: none;
             position: fixed;
-top: 0;
+            top: 0;
             left: 0;
             width: 100%;
             height: 100%;
@@ -190,25 +215,38 @@ top: 0;
 
     <div class="grid-layout">
         <div>
-            <div class="card-panel" style="border-left: 4px solid #4ade80;">
-                <h3 style="margin: 0; color: #4ade80; font-size: 16px;">📊 เครื่องมือวิเคราะห์องศาการเคลื่อนไหวสูงสุด (Range of Motion Tracker)</h3>
-                <div class="metrics-grid-2">
-                    <div class="metric-box">
-                        <div style="font-size: 13px; color: #94a3b8;">ช่วงก้ม-เงยรวม (Pitch ROM)</div>
-                        <div id="lblPitchROM" class="metric-value text-success">0.0°</div>
+            <div class="card-panel" style="border-left: 4px solid #38bdf8;">
+                <h3 style="margin: 0; color: #38bdf8; font-size: 16px;">🔍 ข้อมูลวิเคราะห์ความเสถียรระนาบเครื่อง (Stability Diagnostics)</h3>
+                
+                <div class="metrics-grid-3">
+                    <div class="metric-box" style="padding: 10px;">
+                        <div style="font-size: 12px; color: #94a3b8;">อัตราการสั่นไหว (Jitter)</div>
+                        <div id="lblJitter" style="font-size: 20px; font-weight: bold; margin-top: 5px; color: #f1f5f9;">0.00°</div>
                     </div>
-                    <div class="metric-box">
-                        <div style="font-size: 13px; color: #94a3b8;">ช่วงเอียงซ้าย-ขวารวม (Roll ROM)</div>
-                        <div id="lblRollROM" class="metric-value text-warning">0.0°</div>
+                    <div class="metric-box" style="padding: 10px;">
+                        <div style="font-size: 12px; color: #94a3b8;">ระดับเกรด (Grading)</div>
+                        <div id="lblGrade" style="font-size: 18px; font-weight: bold; margin-top: 7px; color: #64748b;">⏳ รอนิ่ง</div>
                     </div>
+                    <div class="metric-box" style="padding: 10px;">
+                        <div style="font-size: 12px; color: #94a3b8;">รวมเวลาที่นิ่งสนิท</div>
+                        <div id="lblStableTime" style="font-size: 20px; font-weight: bold; margin-top: 5px; color: #4ade80;">0.0s</div>
+                    </div>
+                </div>
+
+                <div class="rom-bar-container">
+                    <div class="rom-bar-label">
+                        <span>ความสม่ำเสมอของระนาบราบ (Flatness Verification Progress)</span>
+                        <span id="lblStablePercent">0%</span>
+                    </div>
+                    <div class="rom-progress-bg"><div id="barStableProgress" class="rom-progress-fill"></div></div>
                 </div>
             </div>
 
             <div class="card-panel">
                 <div class="metrics-grid-2" style="margin-top: 0; margin-bottom: 15px;">
-                    <div class="metric-box" style="border-color: #38bdf8;">
-                        <div style="font-size: 13px; color: #38bdf8;">🏋️‍♂️ องศาการก้ม-เงย (Pitch)</div>
-                        <div id="lblElevation" class="metric-value" style="color: #38bdf8; font-size: 24px;">0.0°</div>
+                    <div class="metric-box" style="border-color: #4ade80;">
+                        <div style="font-size: 13px; color: #4ade80;">🏋️‍♂️ องศาการก้ม-เงย (Pitch)</div>
+                        <div id="lblElevation" class="metric-value" style="color: #4ade80; font-size: 24px;">0.0°</div>
                     </div>
                     <div class="metric-box" style="border-color: #fbbf24;">
                         <div style="font-size: 13px; color: #fbbf24;">🤸‍♂️ องศาการเอียง (Roll)</div>
@@ -234,8 +272,22 @@ top: 0;
         </div>
 
         <div>
+            <div class="card-panel" style="border-left: 4px solid #a855f7;">
+                <h3 style="margin: 0; color: #a855f7; font-size: 15px;">📊 ผลลัพธ์ ROM รวม</h3>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; text-align: center;">
+                    <div style="background: #0f172a; padding: 10px; border-radius: 6px;">
+                        <span style="font-size: 11px; color:#94a3b8;">Pitch ROM</span>
+                        <div id="lblPitchROM" style="font-size: 18px; font-weight: bold; color:#a855f7;">0.0°</div>
+                    </div>
+                    <div style="background: #0f172a; padding: 10px; border-radius: 6px;">
+                        <span style="font-size: 11px; color:#94a3b8;">Roll ROM</span>
+                        <div id="lblRollROM" style="font-size: 18px; font-weight: bold; color:#fbbf24;">0.0°</div>
+                    </div>
+                </div>
+            </div>
+
             <div class="card-panel">
-                <h3 style="margin: 0; font-size: 16px; text-align: center;">⏱️ บันทึกเซสชันผลการทดสอบทางคลินิก</h3>
+                <h3 style="margin: 0; font-size: 16px; text-align: center;">⏱️ บันทึกเซสชันผลการทดสอบ</h3>
                 <div style="font-size: 14px; margin: 20px 0 8px 0;">เซ็ตทดสอบปัจจุบัน: <span id="lblSet" style="font-weight: bold; color: #38bdf8;">1</span></div>
                 <div style="font-size: 14px; margin-bottom: 20px;">เวลาทดสอบ: <span id="lblTimer" style="font-weight: bold; color:#4ade80;">0 วินาที</span></div>
                 
@@ -243,11 +295,11 @@ top: 0;
                     <button id="btnStart" class="action-btn">• เริ่มการทดสอบ</button>
                     <button id="btnSave" class="action-btn secondary-slate">✓ บันทึกชุดข้อมูล</button>
                     <button id="btnExport" class="action-btn" style="background-color: #0284c7; color: white;">↓ ส่งออกไฟล์มาตรฐาน (.CSV)</button>
-                    <button id="btnResetSession" class="action-btn" style="background-color: #ef4444; color: white;">🔄 รีเซ็ตเซสชัน (Reset Session)</button>
+                    <button id="btnResetSession" class="action-btn" style="background-color: #ef4444; color: white;">🔄 รีเซ็ตเซสชัน</button>
                 </div>
                 
-                <div id="logOutput" style="margin-top: 20px; font-size: 12px; color: #94a3b8; max-height: 180px; overflow-y: auto; border-top: 1px solid #334155; padding-top: 15px; line-height: 1.6;">
-                    <span style="color: #64748b;">ยังไม่มีการบันทึกชุดข้อมูลทางคลินิก...</span>
+                <div id="logOutput" style="margin-top: 20px; font-size: 12px; color: #94a3b8; max-height: 140px; overflow-y: auto; border-top: 1px solid #334155; padding-top: 15px; line-height: 1.6;">
+                    <span style="color: #64748b;">ยังไม่มีการบันทึกชุดข้อมูล...</span>
                 </div>
             </div>
         </div>
@@ -277,6 +329,11 @@ top: 0;
         let minPitch = 0, maxPitch = 0, minRoll = 0, maxRoll = 0;
         let firstPayloadReceived = false;
 
+        // ตัวแปรวิเคราะห์เสถียรภาพ (Stability Analytics States)
+        let lastPitch = 0, lastRoll = 0;
+        let stableTicks = 0; // สะสมรอบที่อยู่ในเกณฑ์นิ่งตรง (1 tick ~ ทุกครั้งที่รับข้อมูลเข้า)
+        const targetStableTicks = 50; // ตัวชี้วัดการรักษานิ่งนิ่งสนิทแบบสมบูรณ์
+
         const btnStart = document.getElementById("btnStart");
         const btnSave = document.getElementById("btnSave");
         const lblTimer = document.getElementById("lblTimer");
@@ -292,7 +349,6 @@ top: 0;
             lblSet.textContent = currentSetNum;
         });
 
-        // 📊 Chart.js Initialization
         const ctx = document.getElementById('realtimeChart').getContext('2d');
         const realtimeChart = new Chart(ctx, {
             type: 'line',
@@ -333,7 +389,6 @@ top: 0;
         db.ref("system/isRecording").on("value", (snapshot) => {
             isRecording = snapshot.val() || false;
             clearInterval(clockInterval);
-
             if (isRecording) {
                 btnStart.textContent = "⏸ หยุดค้างค่าการตรวจ";
                 btnStart.style.backgroundColor = "#0ea5e9";
@@ -346,7 +401,7 @@ top: 0;
             }
         });
 
-        // 📡 Realtime Sensor Sync & Visual Calibration Feedback
+        // 📡 Realtime Sensor Sync & Stability Analytics Engine
         db.ref("sensor/live_payload").on("value", (snapshot) => {
             const data = snapshot.val();
             if (!data) return;
@@ -371,20 +426,56 @@ top: 0;
             document.getElementById("lblElevation").textContent = currentPitch.toFixed(1) + "°";
             document.getElementById("lblTilt").textContent = currentRoll.toFixed(1) + "°";
 
-            // ตรวจสอบระนาบพื้นผิวระนาบ (Flatness Validation Rule)
-            if (Math.abs(currentPitch) <= 1.0 && Math.abs(currentRoll) <= 1.0) {
+            // 🧠 คำนวณความสั่นไหวและสถิติวัดระดับความนิ่ง (Jitter & Stability Metrics)
+            let pitchDiff = Math.abs(currentPitch - lastPitch);
+            let rollDiff = Math.abs(currentRoll - lastRoll);
+            let jitterIndex = (pitchDiff + rollDiff) / 2; // ค่าเฉลี่ยการเคลื่อนไหวแบบฉับพลัน
+            
+            lastPitch = currentPitch;
+            lastRoll = currentRoll;
+
+            document.getElementById("lblJitter").textContent = jitterIndex.toFixed(2) + "°";
+
+            // 1. ตรวจสอบความแม่นยำระนาบ (Flatness Rule: Pitch และ Roll ต้องอยู่ภายใน ±1องศา)
+            let isPerfectFlat = Math.abs(currentPitch) <= 1.0 && Math.abs(currentRoll) <= 1.0;
+
+            if (isPerfectFlat) {
                 canvasWrapper.style.borderColor = "#22c55e"; // ขอบเขียว
                 statusBadge.textContent = "🟩 STABLE (ระดับระนาบตรง)";
                 statusBadge.style.background = "#14532d";
                 statusBadge.style.color = "#4ade80";
                 statusBadge.style.borderColor = "#22c55e";
+
+                // สะสมเก็บสถิติเวลาถ้าวางนิ่งสนิทจริง
+                stableTicks++;
+                if (jitterIndex < 0.15) {
+                    document.getElementById("lblGrade").textContent = "💎 Excellent";
+                    document.getElementById("lblGrade").style.color = "#4ade80";
+                } else {
+                    document.getElementById("lblGrade").textContent = "✅ Acceptable";
+                    document.getElementById("lblGrade").style.color = "#fbbf24";
+                }
             } else {
                 canvasWrapper.style.borderColor = "#ef4444"; // ขอบแดง
                 statusBadge.textContent = "🟥 TILTED (เครื่องเอียง)";
                 statusBadge.style.background = "#451a03";
                 statusBadge.style.color = "#f87171";
                 statusBadge.style.borderColor = "#ef4444";
+
+                document.getElementById("lblGrade").textContent = "❌ Unstable";
+                document.getElementById("lblGrade").style.color = "#ef4444";
+                
+                // ลดคะแนนลงทันทีเมื่อหลุดระดับราบ
+                stableTicks = Math.max(0, stableTicks - 3); 
             }
+
+            // แสดงผลลัพธ์เป็นเปอร์เซ็นต์และเวลารวมวินาที
+            let stableSeconds = (stableTicks * 0.05); // แปลง Tick เป็นวินาทีโดยประมาณ
+            let stablePercent = Math.min(100, Math.floor((stableTicks / targetStableTicks) * 100));
+            
+            document.getElementById("lblStableTime").textContent = stableSeconds.toFixed(1) + "s";
+            document.getElementById("lblStablePercent").textContent = stablePercent + "%";
+            document.getElementById("barStableProgress").style.width = stablePercent + "%";
 
             if (!isRecording) return;
 
@@ -431,6 +522,7 @@ top: 0;
                 timerCount = 0; lblTimer.textContent = "0 วินาที";
                 db.ref("system/isRecording").set(false); db.ref("system/currentSetNum").set(1);
                 db.ref("system/resetSignal").set(true).then(() => { db.ref("system/resetSignal").set(false); });
+                stableTicks = 0;
             }
         };
 
@@ -442,7 +534,7 @@ top: 0;
             let link = document.createElement("a"); link.href = URL.createObjectURL(blob); link.download = "clinical_motion_report.csv"; link.click();
         };
 
-        // 📐 ล็อกมุมกล้องอัตโนมัติ (FIXED VIEWPORT - NO CONTROL REQUIRED)
+        // 📐 FIXED FRONT-TOP VIEW ISOMETRIC CAMERA
         let scene, camera, renderer, phoneGroup;
         const container3d = document.getElementById("canvas3d");
         
@@ -451,8 +543,6 @@ top: 0;
             scene.background = new THREE.Color(0x0f172a);
             
             camera = new THREE.PerspectiveCamera(45, container3d.clientWidth / 350, 0.1, 100);
-            
-            // ล็อกมุมกล้องไว้ที่ระยะสายตาเฉียงที่สมบูรณ์แบบ ไม่ต้องใช้ OrbitControls หมุนเองอีกต่อไป
             camera.position.set(2.2, 2.4, 2.2); 
             camera.lookAt(0, 0, 0);
 
@@ -464,14 +554,12 @@ top: 0;
             let mainLight = new THREE.DirectionalLight(0xffffff, 0.7); mainLight.position.set(4, 8, 4); scene.add(mainLight);
             let fillLight = new THREE.DirectionalLight(0x38bdf8, 0.4); fillLight.position.set(-4, 4, -4); scene.add(fillLight);
 
-            // ตาราง Gridระนาบพื้น ช่วยให้อ้างอิงด้วยสายตาได้ง่ายขึ้นมาก
             let gridHelper = new THREE.GridHelper(5, 20, 0x475569, 0x1e293b);
             gridHelper.position.y = -0.1;
             scene.add(gridHelper);
 
             phoneGroup = new THREE.Group();
 
-            // 📱 โครงสร้างตัวเครื่องแบบนอนราบ
             const width = 1.2, height = 2.4, depth = 0.12, radius = 0.15;
             let shape = new THREE.Shape();
             shape.moveTo(-width/2 + radius, height/2);
@@ -493,14 +581,12 @@ top: 0;
             phoneBody.rotation.x = -Math.PI / 2;
             phoneGroup.add(phoneBody);
 
-            // 📺 หน้าจอด้านบน
             let screenGeo = new THREE.BoxGeometry(width - 0.08, 0.01, height - 0.08);
             let screenMat = new THREE.MeshStandardMaterial({ color: 0x020617, roughness: 0.05, metalness: 0.9 });
             let phoneScreen = new THREE.Mesh(screenGeo, screenMat);
             phoneScreen.position.y = depth / 2 + 0.01;
             phoneGroup.add(phoneScreen);
 
-            // 🛠️ ลูกศรทิศทางความแม่นยำสูง
             const origin = new THREE.Vector3(0, depth / 2 + 0.03, 0);
             const arrowLength = 1.3;
             const headLength = 0.25;
@@ -522,7 +608,7 @@ top: 0;
 
             function animate() {
                 requestAnimationFrame(animate);
-                renderer.render(scene, camera); // รัน Render ปกติโดยไม่ต้องมีตัวคอนโทรลเมาส์มาแทรกแซง
+                renderer.render(scene, camera);
             }
             animate();
 
