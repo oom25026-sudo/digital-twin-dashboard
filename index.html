@@ -231,19 +231,19 @@
             <div class="card-panel">
                 <div class="metrics-grid-2" style="margin-top: 0; margin-bottom: 15px;">
                     <div class="metric-box" style="border-color: #38bdf8;">
-                        <div style="font-size: 13px; color: #38bdf8;">🏋️‍♂️ องศาการยกตัว (Elevation)</div>
+                        <div style="font-size: 13px; color: #38bdf8;">🏋️‍♂️ องศาการก้ม-เงย (Pitch)</div>
                         <div id="lblElevation" class="metric-value" style="color: #38bdf8; font-size: 24px;">0.0°</div>
                     </div>
                     <div class="metric-box" style="border-color: #fbbf24;">
-                        <div style="font-size: 13px; color: #fbbf24;">🤸‍♂️ องศาการเอียงเครื่อง (Lateral Tilt)</div>
+                        <div style="font-size: 13px; color: #fbbf24;">🤸‍♂️ องศาการเอียง (Roll)</div>
                         <div id="lblTilt" class="metric-value" style="color: #fbbf24; font-size: 24px;">0.0°</div>
                     </div>
                 </div>
 
                 <div class="axis-legend">
-                    <div class="legend-item"><div class="color-dot" style="background: #ef4444;"></div><span>🔴 แกน X (ชี้ไปทางขวาเครื่อง)</span></div>
-                    <div class="legend-item"><div class="color-dot" style="background: #22c55e;"></div><span>🟢 แกน Y (ชี้ขึ้นด้านบนเครื่อง)</span></div>
-                    <div class="legend-item"><div class="color-dot" style="background: #3b82f6;"></div><span>🔵 แกน Z (พุ่งออกจากหน้าจอเข้าหาตัวคุณ)</span></div>
+                    <div class="legend-item"><div class="color-dot" style="background: #ef4444;"></div><span>🔴 แกน X (เอียง ซ้าย-ขวา)</span></div>
+                    <div class="legend-item"><div class="color-dot" style="background: #22c55e;"></div><span>🟢 แกน Y (ยกหัวเครื่อง ก้ม-เงย)</span></div>
+                    <div class="legend-item"><div class="color-dot" style="background: #3b82f6;"></div><span>🔵 แกน Z (ทิศตั้งฉากขึ้นจากพื้นผิว)</span></div>
                 </div>
 
                 <div id="canvas3d"></div>
@@ -370,43 +370,45 @@
             }
         });
 
-        // 📡 Realtime Sensor Sync - แก้ไขการสลับทิศทางกลับหัว (Invert Fix)
+        // 📡 Realtime Sensor Sync - ปรับปรุงโครงสร้างระนาบตามแกนสมาร์ทโฟนจริง 100%
         db.ref("sensor/live_payload").on("value", (snapshot) => {
             const data = snapshot.val();
             if (!data) return;
 
-            // แก้ไขอาการกลับหัวโดยทำเครื่องหมายลบหน้าองศา Pitch และ Roll ให้สอดคล้องกับมุมโมเดลทางภูมิศาสตร์
-            let currentPitch = -(data.pitch || 0); 
-            let currentRoll = -(data.roll || 0);
-            let currentYaw = data.yaw || 0;
+            let currentPitch = data.pitch || 0; // ค่าก้มเงย
+            let currentRoll = data.roll || 0;   // ค่าเอียงซ้ายขวา
+            let currentYaw = data.yaw || 0;     // ทิศทางหันหัวเครื่อง
 
-            realtimeChart.data.datasets[0].data.shift(); realtimeChart.data.datasets[0].data.push(-currentPitch);
-            realtimeChart.data.datasets[1].data.shift(); realtimeChart.data.datasets[1].data.push(-currentRoll);
+            realtimeChart.data.datasets[0].data.shift(); realtimeChart.data.datasets[0].data.push(currentPitch);
+            realtimeChart.data.datasets[1].data.shift(); realtimeChart.data.datasets[1].data.push(currentRoll);
             realtimeChart.update('none');
 
             if (phoneGroup) {
-                // อัปเดตตรรกะ Matrix Rotation ของระบบ Three.js เพื่อล็อกหัวให้อยู่ด้านบนเสมอไม่กลับหัว
+                // อิงทิศทางการหมุนตามระนาบพื้นโลก (วาดโครงสร้างแบบแบนราบเมื่อวางบนโต๊ะ)
+                // แปลงองศาให้สอดคล้องกับพฤติกรรมเซนเซอร์ของอุปกรณ์พกพา
                 phoneGroup.rotation.set(
                     currentPitch * (Math.PI / 180), 
-                    currentRoll * (Math.PI / 180), 
                     -currentYaw * (Math.PI / 180), 
+                    currentRoll * (Math.PI / 180), 
                     'YXZ'
                 );
             }
 
+            // แสดงผลลัพธ์ดัชนีแบบละเอียดให้ตรวจเช็คความราบตัวเครื่องง่ายๆ
+            document.getElementById("lblElevation").textContent = currentPitch.toFixed(1) + "°";
+            document.getElementById("lblTilt").textContent = currentRoll.toFixed(1) + "°";
+
             if (!isRecording) return;
 
             if (!firstPayloadReceived) {
-                minPitch = -currentPitch; maxPitch = -currentPitch;
-                minRoll = -currentRoll; maxRoll = -currentRoll;
+                minPitch = currentPitch; maxPitch = currentPitch;
+                minRoll = currentRoll; maxRoll = currentRoll;
                 firstPayloadReceived = true;
             } else {
-                let checkPitch = -currentPitch;
-                let checkRoll = -currentRoll;
-                if (checkPitch < minPitch) minPitch = checkPitch;
-                if (checkPitch > maxPitch) maxPitch = checkPitch;
-                if (checkRoll < minRoll) minRoll = checkRoll;
-                if (checkRoll > maxRoll) maxRoll = checkRoll;
+                if (currentPitch < minPitch) minPitch = currentPitch;
+                if (currentPitch > maxPitch) maxPitch = currentPitch;
+                if (currentRoll < minRoll) minRoll = currentRoll;
+                if (currentRoll > maxRoll) maxRoll = currentRoll;
             }
 
             let diffPitch = Math.abs(maxPitch - minPitch);
@@ -421,9 +423,6 @@
 
             document.getElementById("barPitch").style.width = Math.min(100, (diffPitch / 180) * 100) + "%";
             document.getElementById("barRoll").style.width = Math.min(100, (diffRoll / 180) * 100) + "%";
-
-            document.getElementById("lblElevation").textContent = Math.abs(currentPitch).toFixed(1) + "°";
-            document.getElementById("lblTilt").textContent = (-currentRoll) > 0 ? "ขวา " + Math.abs(currentRoll).toFixed(1) + "°" : "ซ้าย " + Math.abs(currentRoll).toFixed(1) + "°";
         });
 
         btnStart.onclick = () => { db.ref("system/isRecording").set(!isRecording); };
@@ -462,7 +461,7 @@
             let link = document.createElement("a"); link.href = URL.createObjectURL(blob); link.download = "clinical_motion_report.csv"; link.click();
         };
 
-        // 📐 REALISTIC 3D MODEL WITH CORRECT OVERHEAD LAYOUT
+        // 📐 REALISTIC 3D FLAT-PLANE SMARTPHONE MODEL
         let scene, camera, renderer, phoneGroup, controls;
         const container3d = document.getElementById("canvas3d");
         
@@ -471,7 +470,7 @@
             scene.background = new THREE.Color(0x0f172a);
             
             camera = new THREE.PerspectiveCamera(45, container3d.clientWidth / 350, 0.1, 100);
-            camera.position.set(0, 1.5, 3.2); // ตั้งกล้องด้านหน้าเฉียงบนเล็กน้อย เพื่อให้เห็นหัวเครื่องชี้ไปข้างบนชัดเจน ไม่สับสนทิศทาง
+            camera.position.set(2.5, 2.5, 2.5); // มุมกล้องมองเฉียงลงมาที่พื้นโต๊ะ เพื่อให้เห็นมิติระนาบราบอย่างสมจริง
             
             renderer = new THREE.WebGLRenderer({ antialias: true });
             renderer.setSize(container3d.clientWidth, 350);
@@ -480,15 +479,19 @@
             controls = new THREE.OrbitControls(camera, renderer.domElement);
             controls.enableDamping = true;
             controls.dampingFactor = 0.05;
-            controls.maxPolarAngle = Math.PI / 2 + 0.3;
 
             scene.add(new THREE.AmbientLight(0xffffff, 0.6));
             let mainLight = new THREE.DirectionalLight(0xffffff, 0.7); mainLight.position.set(4, 8, 4); scene.add(mainLight);
-            let fillLight = new THREE.DirectionalLight(0x38bdf8, 0.4); fillLight.position.set(-4, -2, 4); scene.add(fillLight);
+            let fillLight = new THREE.DirectionalLight(0x38bdf8, 0.4); fillLight.position.set(-4, 4, -4); scene.add(fillLight);
+
+            // เพิ่มตาราง Grid เส้นระนาบพื้นเพื่อให้ผู้ใช้อิงสายตาได้ง่ายว่ามือถือขนานพื้นโลกหรือไม่
+            let gridHelper = new THREE.GridHelper(6, 30, 0x475569, 0x1e293b);
+            gridHelper.position.y = -0.1;
+            scene.add(gridHelper);
 
             phoneGroup = new THREE.Group();
 
-            // 📱 ตัวเครื่องโค้งมนพรีเมียม (Rounded Smartphone Body)
+            // 📱 สร้างตัวเครื่องสมาร์ทโฟนในลักษณะ "นอนราบขนานไปกับพื้น" ตามเริ่มต้น
             const width = 1.2, height = 2.4, depth = 0.12, radius = 0.15;
             let shape = new THREE.Shape();
             shape.moveTo(-width/2 + radius, height/2);
@@ -504,37 +507,41 @@
             let extrudeSettings = { depth: depth, bevelEnabled: true, bevelSegments: 3, steps: 1, bevelSize: 0.02, bevelThickness: 0.02 };
             let bodyGeo = new THREE.ExtrudeGeometry(shape, extrudeSettings);
             bodyGeo.center(); 
+            
             let bodyMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.2, metalness: 0.8 }); 
             let phoneBody = new THREE.Mesh(bodyGeo, bodyMat);
+            
+            // หมุนให้ตัวเครื่องนอนราบไปกับพื้นผิว (Facing upwards)
+            phoneBody.rotation.x = -Math.PI / 2;
             phoneGroup.add(phoneBody);
 
-            // 📺 หน้าจอกระจก (Front Screen)
-            let screenGeo = new THREE.BoxGeometry(width - 0.08, height - 0.08, 0.01);
+            // 📺 หน้าจอกระจกเงาหงายขึ้นด้านบน
+            let screenGeo = new THREE.BoxGeometry(width - 0.08, 0.01, height - 0.08);
             let screenMat = new THREE.MeshStandardMaterial({ color: 0x020617, roughness: 0.05, metalness: 0.9 });
             let phoneScreen = new THREE.Mesh(screenGeo, screenMat);
-            phoneScreen.position.z = depth / 2 + 0.01;
+            phoneScreen.position.y = depth / 2 + 0.01;
             phoneGroup.add(phoneScreen);
 
-            // 🎛️ ปุ่มกดข้างเครื่อง (Physical Side Buttons)
+            // 🎛️ ปุ่มกดข้างเครื่อง (Physical Side Buttons) จัดวางตามโครงสร้างระนาบนอนราบ
             let buttonMat = new THREE.MeshStandardMaterial({ color: 0x64748b, roughness: 0.1, metalness: 0.9 });
-            let volBtnGeo = new THREE.BoxGeometry(0.03, 0.2, 0.04);
-            let volUpBtn = new THREE.Mesh(volBtnGeo, buttonMat); volUpBtn.position.set(-(width/2 + 0.01), 0.4, 0); phoneGroup.add(volUpBtn);
-            let volDownBtn = new THREE.Mesh(volBtnGeo, buttonMat); volDownBtn.position.set(-(width/2 + 0.01), 0.15, 0); phoneGroup.add(volDownBtn);
-            let powerBtnGeo = new THREE.BoxGeometry(0.03, 0.3, 0.04);
-            let powerBtn = new THREE.Mesh(powerBtnGeo, buttonMat); powerBtn.position.set((width/2 + 0.01), 0.3, 0); phoneGroup.add(powerBtn);
+            let volBtnGeo = new THREE.BoxGeometry(0.04, 0.03, 0.2);
+            let volUpBtn = new THREE.Mesh(volBtnGeo, buttonMat); volUpBtn.position.set(-(width/2 + 0.01), 0, 0.4); phoneGroup.add(volUpBtn);
+            let volDownBtn = new THREE.Mesh(volBtnGeo, buttonMat); volDownBtn.position.set(-(width/2 + 0.01), 0, 0.15); phoneGroup.add(volDownBtn);
+            let powerBtnGeo = new THREE.BoxGeometry(0.04, 0.03, 0.3);
+            let powerBtn = new THREE.Mesh(powerBtnGeo, buttonMat); powerBtn.position.set((width/2 + 0.01), 0, 0.3); phoneGroup.add(powerBtn);
 
-            // 🛠️ ลูกศรบอกแกนทิศทางขนาดใหญ่แบบเห็นชัดเจน (High-Visibility Arrows)
-            const origin = new THREE.Vector3(0, 0, depth / 2 + 0.02);
-            const arrowLength = 1.4;
-            const headLength = 0.3;
-            const headWidth = 0.18;
+            // 🛠️ ลูกศรบอกแกนทิศทางอิงตามจุดศูนย์กลางระนาบจริงของโทรศัพท์
+            const origin = new THREE.Vector3(0, depth / 2 + 0.03, 0);
+            const arrowLength = 1.3;
+            const headLength = 0.25;
+            const headWidth = 0.15;
 
-            // 🔴 แกน X ชี้ไปด้านขวาของหน้าจอมือถือ
+            // 🔴 แกน X (สีแดง) ชี้ไปทางขวาตัวเครื่อง (ซ้าย-ขวา)
             let arrowX = new THREE.ArrowHelper(new THREE.Vector3(1, 0, 0), origin, arrowLength, 0xef4444, headLength, headWidth);
-            // 🟢 แกน Y ชี้ขึ้นด้านบนของหน้าจอมือถือ (ตรงจุดนี้เป็นหัวเครื่องเสมอ)
-            let arrowY = new THREE.ArrowHelper(new THREE.Vector3(0, 1, 0), origin, arrowLength, 0x22c55e, headLength, headWidth);
-            // 🔵 แกน Z ชี้พุ่งออกมาจากหน้าจอเข้าหาตัวผู้ชม
-            let arrowZ = new THREE.ArrowHelper(new THREE.Vector3(0, 0, 1), origin, arrowLength, 0x3b82f6, headLength, headWidth);
+            // 🟢 แกน Y (สีเขียว) ชี้ไปข้างหน้าตามแนวตัวเครื่อง (หัวเครื่อง)
+            let arrowY = new THREE.ArrowHelper(new THREE.Vector3(0, 0, -1), origin, arrowLength, 0x22c55e, headLength, headWidth);
+            // 🔵 แกน Z (สีน้ำเงิน) ชี้พุ่งตั้งฉากขึ้นฟ้า (บอกระยะยกความสูงระนาบ)
+            let arrowZ = new THREE.ArrowHelper(new THREE.Vector3(0, 1, 0), origin, arrowLength, 0x3b82f6, headLength, headWidth);
 
             arrowX.line.material.linewidth = 5;
             arrowY.line.material.linewidth = 5;
