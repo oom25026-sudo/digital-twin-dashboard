@@ -98,8 +98,7 @@
 
     let isRecording = false;
 
-    // 🔴 [สำคัญมาก] คอยดักฟังการเปลี่ยนแปลงจาก Firebase เสมอ! 
-    // หากคอมพิวเตอร์เปลี่ยนสถานะ หรือเรากดบนมือถือเอง ปุ่มจะเปลี่ยนไปตามฐานข้อมูล Realtime ทันที
+    // ดักฟังสถานะปุ่มและปรับเอฟเฟกต์ตาม Firebase แบบ Realtime
     db.ref("system/isRecording").on("value", (snapshot) => {
         isRecording = snapshot.val() || false;
         if (isRecording) {
@@ -113,7 +112,6 @@
         }
     });
 
-    // เมื่อกดปุ่มสั่งงานจากมือถือ -> ดันค่าสลับ (Toggle) ไปอัปเดตบน Firebase เสมอ
     btnControl.onclick = () => {
         db.ref("system/isRecording").set(!isRecording);
     };
