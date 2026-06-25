@@ -250,7 +250,7 @@
 
 <script>
     window.addEventListener('DOMContentLoaded', () => {
-        // กำหนดปลายทางฐานข้อมูล Firebase Realtime Database ปลายทางของคุณ
+        // เชื่อมต่อ Firebase Realtime Database
         const firebaseConfig = { databaseURL: "https://llllllll-3c932-default-rtdb.asia-southeast1.firebasedatabase.app/" };
         if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
         const db = firebase.database();
@@ -270,10 +270,18 @@
         const lblSet = document.getElementById("lblSet");
         const logOutput = document.getElementById("logOutput");
 
-        // ล็อกค่าเริ่มต้นเป็นชุดที่ 1 เสมอเพื่อไม่ให้เป็นเลข 0 ทับซ้อนซ้ำซาก
-        lblSet.textContent = currentSetNum;
+        // โหลดเลขเซ็ตปัจจุบันเริ่มต้นจาก Firebase เสมอเพื่อเลี่ยงปัญหาเป็น 0
+        db.ref("system/currentSetNum").on("value", (snapshot) => {
+            if (snapshot.exists()) {
+                currentSetNum = snapshot.val();
+            } else {
+                currentSetNum = 1;
+                db.ref("system/currentSetNum").set(1);
+            }
+            lblSet.textContent = currentSetNum;
+        });
 
-        // 📊 สั่งทำงานในฝั่ง Chart.js แผงวาดกราฟเส้นคู่แบบเรียลไทม์
+        // 📊 Initialize Chart.js
         const ctx = document.getElementById('realtimeChart').getContext('2d');
         const realtimeChart = new Chart(ctx, {
             type: 'line',
@@ -285,8 +293,7 @@
                 ]
             },
             options: {
-                responsive: true,
-                maintainAspectRatio: false,
+                responsive: true, maintainAspectRatio: false,
                 plugins: { legend: { display: false } },
                 scales: {
                     x: { display: false },
@@ -295,7 +302,6 @@
             }
         });
 
-        // 🔄 ฟังก์ชันล้างค่าและเซ็ตศูนย์ขอบเขตองศา (ROM Reset Logic)
         function resetROM() {
             firstPayloadReceived = false;
             minPitch = 0; maxPitch = 0; minRoll = 0; maxRoll = 0;
@@ -314,7 +320,7 @@
             db.ref("system/resetSignal").set(true).then(() => db.ref("system/resetSignal").set(false));
         };
 
-        // 🔴 เชื่อมสัญญาณปุ่มกดเริ่มการตรวจวัดและคอย Sync เวลาไปตามการเปลี่ยนค่าบน Firebase
+        // 🔴 ฟังสถานะปุ่มบันทึก/เวลาตรวจจาก Firebase (ทำให้กดเริ่มจากที่ไหนปุ่มก็เปลี่ยนตามกัน)
         db.ref("system/isRecording").on("value", (snapshot) => {
             isRecording = snapshot.val() || false;
             clearInterval(clockInterval);
@@ -335,7 +341,7 @@
             }
         });
 
-        // 📡 ดักฟังสัญญาณข้อมูลการเอียงเครื่องที่ส่งจากมือถือสด ๆ ตลอดเวลา
+        // 📡 ดักฟังข้อมูลเซนเซอร์มือถือ
         db.ref("sensor/live_payload").on("value", (snapshot) => {
             const data = snapshot.val();
             if (!data) return;
@@ -343,19 +349,14 @@
             let currentPitch = data.pitch || 0;
             let currentRoll = data.roll || 0;
 
-            // เลื่อนข้อมูลกราฟเส้นไปข้างหน้าทีละจังหวะ
-            realtimeChart.data.datasets[0].data.shift(); 
-            realtimeChart.data.datasets[0].data.push(currentPitch);
-            realtimeChart.data.datasets[1].data.shift(); 
-            realtimeChart.data.datasets[1].data.push(currentRoll);
+            realtimeChart.data.datasets[0].data.shift(); realtimeChart.data.datasets[0].data.push(currentPitch);
+            realtimeChart.data.datasets[1].data.shift(); realtimeChart.data.datasets[1].data.push(currentRoll);
             realtimeChart.update('none');
 
-            // อัปเดตรัศมีการหมุนของกล่องจำลอง 3D Digital Twin ให้สอดคล้องกัน
             if (phoneMesh) {
                 phoneMesh.rotation.set(currentPitch * (Math.PI / 180), currentRoll * (Math.PI / 180), -(data.yaw || 0) * (Math.PI / 180), 'YXZ');
             }
 
-            // จะเริ่มล็อกและคำนวณหาค่าต่ำสุด-สูงสุดรวม (ROM) ก็ต่อเมื่อกดปุ่มเริ่มการตรวจเท่านั้น
             if (!isRecording) return;
 
             if (!firstPayloadReceived) {
@@ -372,7 +373,6 @@
             let diffPitch = Math.abs(maxPitch - minPitch);
             let diffRoll = Math.abs(maxRoll - minRoll);
 
-            // พ่นเลของศาและปรับแถบความกว้างเปอร์เซ็นต์ (Progress Bar)
             document.getElementById("lblPitchROM").textContent = diffPitch.toFixed(1) + "°";
             document.getElementById("lblRollROM").textContent = diffRoll.toFixed(1) + "°";
             document.getElementById("lblMinPitch").textContent = "Min: " + minPitch.toFixed(1) + "°";
@@ -387,88 +387,62 @@
             document.getElementById("lblTilt").textContent = currentRoll > 0 ? "ขวา " + Math.abs(currentRoll).toFixed(1) + "°" : "ซ้าย " + Math.abs(currentRoll).toFixed(1) + "°";
         });
 
-        // จังหวะกดปุ่มเริ่มให้สลับสถานะค่าบูลีนบนฐานข้อมูลเรียลไทม์
+        // กดเริ่มในคอม -> ส่งข้อมูลเปลี่ยนสถานะขึ้น Firebase
         btnStart.onclick = () => { db.ref("system/isRecording").set(!isRecording); };
 
-        // ✓ ปุ่มสำหรับบันทึกชุดข้อมูลปัจจุบันลงกล่องเก็บประวัติด้านล่าง (Log Tracker)
+        // ✓ ปุ่มบันทึกชุดข้อมูล
         btnSave.onclick = () => {
             let pRom = document.getElementById("lblPitchROM").textContent.replace('°','');
             let rRom = document.getElementById("lblRollROM").textContent.replace('°','');
 
             recordsList.push({
-                set: currentSetNum, 
-                duration: timerCount,
-                pitchRom: pRom, 
-                rollRom: rRom
+                set: currentSetNum, duration: timerCount,
+                pitchRom: pRom, rollRom: rRom
             });
 
-            // วนลูปเจนสายอักขระ HTML แสดงประวัติบันทึกข้อมูลย้อนหลัง
             let logHTML = "";
             recordsList.forEach((r) => {
                 logHTML += `<div style="margin-bottom:4px; border-bottom: 1px dashed #334155; padding-bottom: 4px;">ชุดที่ ${r.set} [accuracy] เวลา ${r.duration} วิ (Pitch ROM: ${r.pitchRom}° / Roll ROM: ${r.rollRom}°)</div>`;
             });
             logOutput.innerHTML = logHTML;
 
-            // เพิ่มค่าตัวเลขแสดงเซ็ตการทดสอบไปข้างหน้าทีละ 1 สเต็ปเพื่อรักษารอบจริงไว้
+            // บันทึกเลขเซ็ตถัดไปขึ้นระบบ Firebase ป้องกันการหลุดกลับเป็น 0
             currentSetNum++;
-            lblSet.textContent = currentSetNum;
+            db.ref("system/currentSetNum").set(currentSetNum);
             
-            // เคลียร์เวลากลับไปตั้งต้น และแจ้งปิดรับค่าชั่วคราวเพื่อให้พร้อมนับรอบถัดไป
             timerCount = 0;
             lblTimer.textContent = "0 วินาที";
-            db.ref("system/isRecording").set(false);
+            db.ref("system/isRecording").set(false); 
         };
 
-        // ↓ ส่งออกตารางบันทึกชุดข้อมูลออกมาเป็นนามสกุลไฟล์สเปรดชีตมาตรฐาน (.CSV)
+        // ↓ ส่งออกไฟล์รายงานเป็น .CSV
         document.getElementById("btnExport").onclick = () => {
-            if(!recordsList.length) {
-                alert("ไม่มีข้อมูลในตารางที่จะส่งออกเป็นไฟล์ได้ครับ");
-                return;
-            }
+            if(!recordsList.length) return alert("ไม่มีข้อมูลที่จะส่งออกครับ");
             let csv = "Set,Duration_Seconds,Pitch_ROM,Roll_ROM\n";
-            recordsList.forEach(r => { 
-                csv += `${r.set},${r.duration},${r.pitchRom},${r.rollRom}\n`; 
-            });
+            recordsList.forEach(r => { csv += `${r.set},${r.duration},${r.pitchRom},${r.rollRom}\n`; });
             let blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
             let link = document.createElement("a");
-            link.href = URL.createObjectURL(blob); 
-            link.download = "biomotion_session_report.csv"; 
-            link.click();
+            link.href = URL.createObjectURL(blob); link.download = "biomotion_session_report.csv"; link.click();
         };
 
-        // 📐 รันชุดโครงสร้าง Three.js เรนเดอร์รูปทรงโมเดล 3D จำลองพิกัดโครงสร้าง
+        // 📐 THREE.js 3D WebGL Setup
         let scene, camera, renderer, phoneMesh;
         const container3d = document.getElementById("canvas3d");
         if(container3d) {
-            scene = new THREE.Scene(); 
-            scene.background = new THREE.Color(0x0f172a);
+            scene = new THREE.Scene(); scene.background = new THREE.Color(0x0f172a);
             camera = new THREE.PerspectiveCamera(45, container3d.clientWidth / 260, 0.1, 100);
-            camera.position.set(2.0, 2.0, 3.5); 
-            camera.lookAt(0, 0, 0);
-            
+            camera.position.set(2.0, 2.0, 3.5); camera.lookAt(0, 0, 0);
             renderer = new THREE.WebGLRenderer({ antialias: true });
-            renderer.setSize(container3d.clientWidth, 260); 
-            container3d.appendChild(renderer.domElement);
-            
+            renderer.setSize(container3d.clientWidth, 260); container3d.appendChild(renderer.domElement);
             scene.add(new THREE.AmbientLight(0xffffff, 0.8));
-            let dirLight = new THREE.DirectionalLight(0xffffff, 0.5); 
-            dirLight.position.set(5, 5, 5); 
-            scene.add(dirLight);
-            
-            phoneMesh = new THREE.Mesh(
-                new THREE.BoxGeometry(1.2, 2.2, 0.15), 
-                new THREE.MeshStandardMaterial({ color: 0x38bdf8, roughness: 0.4 })
-            );
+            let dirLight = new THREE.DirectionalLight(0xffffff, 0.5); dirLight.position.set(5, 5, 5); scene.add(dirLight);
+            phoneMesh = new THREE.Mesh(new THREE.BoxGeometry(1.2, 2.2, 0.15), new THREE.MeshStandardMaterial({ color: 0x38bdf8, roughness: 0.4 }));
             scene.add(phoneMesh);
-            
-            function animate() { 
-                requestAnimationFrame(animate); 
-                renderer.render(scene, camera); 
-            }
+            function animate() { requestAnimationFrame(animate); renderer.render(scene, camera); }
             animate();
         }
 
-        // 📱 ควบคุมการแปลง Domain URL ปัจจุบันออกไปเป็นแผ่น QR Code ให้กล้องสแกน
+        // 📱 QR Code Generation
         document.getElementById("btnOpenQR").onclick = () => {
             document.getElementById("qrModal").style.display = "flex";
             document.getElementById("qrcode").innerHTML = "";
@@ -476,9 +450,7 @@
             let targetURL = currentURL.substring(0, currentURL.lastIndexOf("/")) + "/phone.html";
             new QRCode(document.getElementById("qrcode"), { text: targetURL, width: 160, height: 160 });
         };
-        document.getElementById("btnCloseQR").onclick = () => { 
-            document.getElementById("qrModal").style.display = "none"; 
-        };
+        document.getElementById("btnCloseQR").onclick = () => { document.getElementById("qrModal").style.display = "none"; };
     });
 </script>
 </body>
