@@ -230,6 +230,7 @@
                     <button id="btnStart" class="action-btn">• เริ่มการทดสอบ</button>
                     <button id="btnSave" class="action-btn secondary-slate">✓ บันทึกชุดข้อมูล</button>
                     <button id="btnExport" class="action-btn" style="background-color: #0284c7; color: white;">↓ ส่งออกไฟล์มาตรฐาน (.CSV)</button>
+                    <button id="btnResetSession" class="action-btn" style="background-color: #ef4444; color: white;">🔄 รีเซ็ตเซสชัน (Reset Session)</button>
                 </div>
                 
                 <div id="logOutput" style="margin-top: 20px; font-size: 12px; color: #94a3b8; max-height: 180px; overflow-y: auto; border-top: 1px solid #334155; padding-top: 15px; line-height: 1.6;">
@@ -268,6 +269,7 @@
         const lblTimer = document.getElementById("lblTimer");
         const lblSet = document.getElementById("lblSet");
         const logOutput = document.getElementById("logOutput");
+        const btnResetSession = document.getElementById("btnResetSession");
 
         // โหลดรอบเซ็ตปัจจุบันจาก Firebase
         db.ref("system/currentSetNum").on("value", (snapshot) => {
@@ -301,7 +303,6 @@
             }
         });
 
-        // ✨ ฟังก์ชันล้างค่าและเริ่มคำนวณ ROM ใหม่สำหรับรอบถัดไป
         function resetROM() {
             firstPayloadReceived = false;
             minPitch = 0; maxPitch = 0; minRoll = 0; maxRoll = 0;
@@ -313,26 +314,25 @@
             document.getElementById("lblMaxRoll").textContent = "Max: 0.0°";
             document.getElementById("barPitch").style.width = "0%";
             document.getElementById("barRoll").style.width = "0%";
+            document.getElementById("lblElevation").textContent = "0.0°";
+            document.getElementById("lblTilt").textContent = "0.0°";
         }
 
-        // คอยดักฟังสัญญาณรีเซ็ตจาก Firebase (เผื่อกดรีเซ็ตจากเครื่องอื่น/มือถือ)
         db.ref("system/resetSignal").on("value", (snapshot) => {
-            if (snapshot.val() === true) {
-                resetROM();
-            }
+            if (snapshot.val() === true) { resetROM(); }
         });
 
         document.getElementById("btnResetROM").onclick = () => {
             db.ref("system/resetSignal").set(true).then(() => db.ref("system/resetSignal").set(false));
         };
 
-        // 🔴 ฟังสถานะเริ่ม/หยุดตรวจการทดสอบ
+        // 🔴 ฟังสถานะปุ่มบันทึก
         db.ref("system/isRecording").on("value", (snapshot) => {
             isRecording = snapshot.val() || false;
             clearInterval(clockInterval);
 
             if (isRecording) {
-                btnStart.textContent = "⏸ หยุดคค่าการตรวจ";
+                btnStart.textContent = "⏸ หยุดค้างค่าการตรวจ";
                 btnStart.style.backgroundColor = "#0ea5e9";
                 btnStart.style.color = "#ffffff";
                 
@@ -347,7 +347,7 @@
             }
         });
 
-        // 📡 ดักฟังข้อมูลเซนเซอร์แบบ Realtime
+        // 📡 ดักฟังข้อมูลเซนเซอร์มือถือแบบ Realtime
         db.ref("sensor/live_payload").on("value", (snapshot) => {
             const data = snapshot.val();
             if (!data) return;
@@ -359,11 +359,15 @@
             realtimeChart.data.datasets[1].data.shift(); realtimeChart.data.datasets[1].data.push(currentRoll);
             realtimeChart.update('none');
 
-            if (phoneMesh) {
-                phoneMesh.rotation.set(currentPitch * (Math.PI / 180), currentRoll * (Math.PI / 180), -(data.yaw || 0) * (Math.PI / 180), 'YXZ');
+            if (phoneGroup) {
+                phoneGroup.rotation.set(
+                    currentPitch * (Math.PI / 180), 
+                    currentRoll * (Math.PI / 180), 
+                    -(data.yaw || 0) * (Math.PI / 180), 
+                    'YXZ'
+                );
             }
 
-            // ถ้าไม่ได้อยู่ในสถานะกดตรวจ (isRecording = false) จะไม่เอามาคำนวณหาค่าขอบเขต ROM
             if (!isRecording) return;
 
             if (!firstPayloadReceived) {
@@ -396,7 +400,6 @@
 
         btnStart.onclick = () => { db.ref("system/isRecording").set(!isRecording); };
 
-        // ✓ เมื่อกดปุ่มบันทึกชุดข้อมูล (Save Set)
         btnSave.onclick = () => {
             let pRom = document.getElementById("lblPitchROM").textContent.replace('°','');
             let rRom = document.getElementById("lblRollROM").textContent.replace('°','');
@@ -412,18 +415,32 @@
             });
             logOutput.innerHTML = logHTML;
 
-            // ⚡ สั่งรีเซ็ตค่า ROM บน Firebase ทันที เพื่อให้เซ็ตถัดไปเริ่มนับใหม่จากศูนย์
-            db.ref("system/resetSignal").set(true).then(() => {
-                db.ref("system/resetSignal").set(false);
-            });
+            db.ref("system/resetSignal").set(true).then(() => { db.ref("system/resetSignal").set(false); });
 
-            // ปรับเลขเซ็ตไปข้างหน้าและอัปเดตขึ้น Firebase แกนกลาง
             currentSetNum++;
             db.ref("system/currentSetNum").set(currentSetNum);
             
             timerCount = 0;
             lblTimer.textContent = "0 วินาที";
             db.ref("system/isRecording").set(false); 
+        };
+
+        // ✨ ฟังก์ชันเมื่อผู้ใช้งานกดปุ่มล้างประวัติ/รีเซ็ตเซสชันหลักทั้งหมด
+        btnResetSession.onclick = () => {
+            if (confirm("คุณต้องการล้างประวัติการทดสอบ และเริ่มต้นเซ็ตที่ 1 ใหม่ทั้งหมดใช่หรือไม่?")) {
+                recordsList = []; // ล้างอาร์เรย์เก็บข้อมูล
+                logOutput.innerHTML = `<span style="color: #64748b;">ยังไม่มีการบันทึกชุดข้อมูล...</span>`;
+                
+                timerCount = 0;
+                lblTimer.textContent = "0 วินาที";
+                
+                // สั่งหยุดตรวจวัด และเซ็ตค่าเลขรอบกลับไปเป็น 1 บน Firebase แกนกลาง
+                db.ref("system/isRecording").set(false);
+                db.ref("system/currentSetNum").set(1);
+                
+                // ล้างค่าหน้าริวิวมุมมององศาให้กลับเป็น 0
+                db.ref("system/resetSignal").set(true).then(() => { db.ref("system/resetSignal").set(false); });
+            }
         };
 
         document.getElementById("btnExport").onclick = () => {
@@ -436,18 +453,38 @@
         };
 
         // 📐 THREE.js Setup
-        let scene, camera, renderer, phoneMesh;
+        let scene, camera, renderer, phoneGroup;
         const container3d = document.getElementById("canvas3d");
         if(container3d) {
             scene = new THREE.Scene(); scene.background = new THREE.Color(0x0f172a);
             camera = new THREE.PerspectiveCamera(45, container3d.clientWidth / 260, 0.1, 100);
-            camera.position.set(2.0, 2.0, 3.5); camera.lookAt(0, 0, 0);
+            camera.position.set(2.2, 1.8, 3.2); camera.lookAt(0, 0, 0);
+            
             renderer = new THREE.WebGLRenderer({ antialias: true });
             renderer.setSize(container3d.clientWidth, 260); container3d.appendChild(renderer.domElement);
-            scene.add(new THREE.AmbientLight(0xffffff, 0.8));
-            let dirLight = new THREE.DirectionalLight(0xffffff, 0.5); dirLight.position.set(5, 5, 5); scene.add(dirLight);
-            phoneMesh = new THREE.Mesh(new THREE.BoxGeometry(1.2, 2.2, 0.15), new THREE.MeshStandardMaterial({ color: 0x38bdf8, roughness: 0.4 }));
-            scene.add(phoneMesh);
+            
+            scene.add(new THREE.AmbientLight(0xffffff, 0.7));
+            let dirLight = new THREE.DirectionalLight(0xffffff, 0.6); dirLight.position.set(5, 8, 5); scene.add(dirLight);
+            
+            phoneGroup = new THREE.Group();
+
+            let bodyGeo = new THREE.BoxGeometry(1.2, 2.2, 0.15);
+            let bodyMat = new THREE.MeshStandardMaterial({ color: 0x0284c7, roughness: 0.3 });
+            let phoneBody = new THREE.Mesh(bodyGeo, bodyMat);
+            phoneGroup.add(phoneBody);
+
+            let screenGeo = new THREE.BoxGeometry(1.1, 2.0, 0.02);
+            let screenMat = new THREE.MeshBasicMaterial({ color: 0x1e293b });
+            let phoneScreen = new THREE.Mesh(screenGeo, screenMat);
+            phoneScreen.position.z = 0.08;
+            phoneGroup.add(phoneScreen);
+
+            let axisHelper = new THREE.AxesHelper(1.5);
+            axisHelper.position.z = 0.1; 
+            phoneGroup.add(axisHelper);
+
+            scene.add(phoneGroup);
+
             function animate() { requestAnimationFrame(animate); renderer.render(scene, camera); }
             animate();
         }
@@ -460,6 +497,8 @@
             new QRCode(document.getElementById("qrcode"), { text: targetURL, width: 160, height: 160 });
         };
         document.getElementById("btnCloseQR").onclick = () => { document.getElementById("qrModal").style.display = "none"; };
+        
+        resetROM();
     });
 </script>
 </body>
