@@ -7,7 +7,6 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
@@ -75,17 +74,34 @@
         .text-warning {
             color: #fbbf24 !important;
         }
-        #canvas3d {
+        .canvas-container {
+            position: relative;
             width: 100%;
             height: 350px;
-            background-color: #0f172a;
-            border-radius: 8px;
-            border: 1px solid #334155;
             margin-bottom: 15px;
-            cursor: grab;
+            border-radius: 8px;
+            border: 2px solid #334155;
+            overflow: hidden;
+            transition: border-color 0.3s ease;
         }
-        #canvas3d:active {
-            cursor: grabbing;
+        #canvas3d {
+            width: 100%;
+            height: 100%;
+            background-color: #0f172a;
+        }
+        /* ป้ายแจ้งสถานะระนาบมุมซ้ายบนของจอ 3D */
+        .status-badge {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-weight: bold;
+            font-size: 13px;
+            z-index: 10;
+            background: #334155;
+            color: #94a3b8;
+            border: 1px solid #475569;
         }
         .chart-container {
             position: relative;
@@ -119,32 +135,6 @@
             background-color: #475569;
             color: white;
         }
-        .rom-bar-container {
-            background: #0f172a;
-            border: 1px solid #334155;
-            border-radius: 6px;
-            padding: 10px;
-            margin-top: 10px;
-        }
-        .rom-bar-label {
-            font-size: 11px;
-            color: #94a3b8;
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 6px;
-        }
-        .rom-progress-bg {
-            background: #1e293b;
-            height: 8px;
-            border-radius: 4px;
-            overflow: hidden;
-        }
-        .rom-progress-fill {
-            background: linear-gradient(90deg, #38bdf8, #4ade80);
-            height: 100%;
-            width: 0%;
-            transition: width 0.1s ease;
-        }
         .axis-legend {
             display: flex;
             justify-content: center;
@@ -169,7 +159,7 @@
         .modal {
             display: none;
             position: fixed;
-            top: 0;
+top: 0;
             left: 0;
             width: 100%;
             height: 100%;
@@ -206,24 +196,10 @@
                     <div class="metric-box">
                         <div style="font-size: 13px; color: #94a3b8;">ช่วงก้ม-เงยรวม (Pitch ROM)</div>
                         <div id="lblPitchROM" class="metric-value text-success">0.0°</div>
-                        <div class="rom-bar-container">
-                            <div class="rom-bar-label">
-                                <span id="lblMinPitch">Min: 0.0°</span>
-                                <span id="lblMaxPitch">Max: 0.0°</span>
-                            </div>
-                            <div class="rom-progress-bg"><div id="barPitch" class="rom-progress-fill"></div></div>
-                        </div>
                     </div>
                     <div class="metric-box">
                         <div style="font-size: 13px; color: #94a3b8;">ช่วงเอียงซ้าย-ขวารวม (Roll ROM)</div>
                         <div id="lblRollROM" class="metric-value text-warning">0.0°</div>
-                        <div class="rom-bar-container">
-                            <div class="rom-bar-label">
-                                <span id="lblMinRoll">Min: 0.0°</span>
-                                <span id="lblMaxRoll">Max: 0.0°</span>
-                            </div>
-                            <div class="rom-progress-bg"><div id="barRoll" class="rom-progress-fill" style="background: linear-gradient(90deg, #fbbf24, #f59e0b);"></div></div>
-                        </div>
                     </div>
                 </div>
             </div>
@@ -246,7 +222,11 @@
                     <div class="legend-item"><div class="color-dot" style="background: #3b82f6;"></div><span>🔵 แกน Z (ทิศตั้งฉากขึ้นจากพื้นผิว)</span></div>
                 </div>
 
-                <div id="canvas3d"></div>
+                <div class="canvas-container" id="canvasWrapper">
+                    <div id="statusBadge" class="status-badge">⏳ รอกำหนดระนาบ...</div>
+                    <div id="canvas3d"></div>
+                </div>
+
                 <div class="chart-container">
                     <canvas id="realtimeChart"></canvas>
                 </div>
@@ -303,10 +283,12 @@
         const lblSet = document.getElementById("lblSet");
         const logOutput = document.getElementById("logOutput");
         const btnResetSession = document.getElementById("btnResetSession");
+        
+        const canvasWrapper = document.getElementById("canvasWrapper");
+        const statusBadge = document.getElementById("statusBadge");
 
         db.ref("system/currentSetNum").on("value", (snapshot) => {
             if (snapshot.exists()) { currentSetNum = snapshot.val(); } 
-            else { currentSetNum = 1; db.ref("system/currentSetNum").set(1); }
             lblSet.textContent = currentSetNum;
         });
 
@@ -336,12 +318,6 @@
             minPitch = 0; maxPitch = 0; minRoll = 0; maxRoll = 0;
             document.getElementById("lblPitchROM").textContent = "0.0°";
             document.getElementById("lblRollROM").textContent = "0.0°";
-            document.getElementById("lblMinPitch").textContent = "Min: 0.0°";
-            document.getElementById("lblMaxPitch").textContent = "Max: 0.0°";
-            document.getElementById("lblMinRoll").textContent = "Min: 0.0°";
-            document.getElementById("lblMaxRoll").textContent = "Max: 0.0°";
-            document.getElementById("barPitch").style.width = "0%";
-            document.getElementById("barRoll").style.width = "0%";
             document.getElementById("lblElevation").textContent = "0.0°";
             document.getElementById("lblTilt").textContent = "0.0°";
         }
@@ -370,22 +346,20 @@
             }
         });
 
-        // 📡 Realtime Sensor Sync - ปรับปรุงโครงสร้างระนาบตามแกนสมาร์ทโฟนจริง 100%
+        // 📡 Realtime Sensor Sync & Visual Calibration Feedback
         db.ref("sensor/live_payload").on("value", (snapshot) => {
             const data = snapshot.val();
             if (!data) return;
 
-            let currentPitch = data.pitch || 0; // ค่าก้มเงย
-            let currentRoll = data.roll || 0;   // ค่าเอียงซ้ายขวา
-            let currentYaw = data.yaw || 0;     // ทิศทางหันหัวเครื่อง
+            let currentPitch = data.pitch || 0; 
+            let currentRoll = data.roll || 0;   
+            let currentYaw = data.yaw || 0;     
 
             realtimeChart.data.datasets[0].data.shift(); realtimeChart.data.datasets[0].data.push(currentPitch);
             realtimeChart.data.datasets[1].data.shift(); realtimeChart.data.datasets[1].data.push(currentRoll);
             realtimeChart.update('none');
 
             if (phoneGroup) {
-                // อิงทิศทางการหมุนตามระนาบพื้นโลก (วาดโครงสร้างแบบแบนราบเมื่อวางบนโต๊ะ)
-                // แปลงองศาให้สอดคล้องกับพฤติกรรมเซนเซอร์ของอุปกรณ์พกพา
                 phoneGroup.rotation.set(
                     currentPitch * (Math.PI / 180), 
                     -currentYaw * (Math.PI / 180), 
@@ -394,9 +368,23 @@
                 );
             }
 
-            // แสดงผลลัพธ์ดัชนีแบบละเอียดให้ตรวจเช็คความราบตัวเครื่องง่ายๆ
             document.getElementById("lblElevation").textContent = currentPitch.toFixed(1) + "°";
             document.getElementById("lblTilt").textContent = currentRoll.toFixed(1) + "°";
+
+            // ตรวจสอบระนาบพื้นผิวระนาบ (Flatness Validation Rule)
+            if (Math.abs(currentPitch) <= 1.0 && Math.abs(currentRoll) <= 1.0) {
+                canvasWrapper.style.borderColor = "#22c55e"; // ขอบเขียว
+                statusBadge.textContent = "🟩 STABLE (ระดับระนาบตรง)";
+                statusBadge.style.background = "#14532d";
+                statusBadge.style.color = "#4ade80";
+                statusBadge.style.borderColor = "#22c55e";
+            } else {
+                canvasWrapper.style.borderColor = "#ef4444"; // ขอบแดง
+                statusBadge.textContent = "🟥 TILTED (เครื่องเอียง)";
+                statusBadge.style.background = "#451a03";
+                statusBadge.style.color = "#f87171";
+                statusBadge.style.borderColor = "#ef4444";
+            }
 
             if (!isRecording) return;
 
@@ -416,13 +404,6 @@
 
             document.getElementById("lblPitchROM").textContent = diffPitch.toFixed(1) + "°";
             document.getElementById("lblRollROM").textContent = diffRoll.toFixed(1) + "°";
-            document.getElementById("lblMinPitch").textContent = "Min: " + minPitch.toFixed(1) + "°";
-            document.getElementById("lblMaxPitch").textContent = "Max: " + maxPitch.toFixed(1) + "°";
-            document.getElementById("lblMinRoll").textContent = "Min: " + minRoll.toFixed(1) + "°";
-            document.getElementById("lblMaxRoll").textContent = "Max: " + maxRoll.toFixed(1) + "°";
-
-            document.getElementById("barPitch").style.width = Math.min(100, (diffPitch / 180) * 100) + "%";
-            document.getElementById("barRoll").style.width = Math.min(100, (diffRoll / 180) * 100) + "%";
         });
 
         btnStart.onclick = () => { db.ref("system/isRecording").set(!isRecording); };
@@ -461,8 +442,8 @@
             let link = document.createElement("a"); link.href = URL.createObjectURL(blob); link.download = "clinical_motion_report.csv"; link.click();
         };
 
-        // 📐 REALISTIC 3D FLAT-PLANE SMARTPHONE MODEL
-        let scene, camera, renderer, phoneGroup, controls;
+        // 📐 ล็อกมุมกล้องอัตโนมัติ (FIXED VIEWPORT - NO CONTROL REQUIRED)
+        let scene, camera, renderer, phoneGroup;
         const container3d = document.getElementById("canvas3d");
         
         if(container3d) {
@@ -470,28 +451,27 @@
             scene.background = new THREE.Color(0x0f172a);
             
             camera = new THREE.PerspectiveCamera(45, container3d.clientWidth / 350, 0.1, 100);
-            camera.position.set(2.5, 2.5, 2.5); // มุมกล้องมองเฉียงลงมาที่พื้นโต๊ะ เพื่อให้เห็นมิติระนาบราบอย่างสมจริง
             
+            // ล็อกมุมกล้องไว้ที่ระยะสายตาเฉียงที่สมบูรณ์แบบ ไม่ต้องใช้ OrbitControls หมุนเองอีกต่อไป
+            camera.position.set(2.2, 2.4, 2.2); 
+            camera.lookAt(0, 0, 0);
+
             renderer = new THREE.WebGLRenderer({ antialias: true });
             renderer.setSize(container3d.clientWidth, 350);
             container3d.appendChild(renderer.domElement);
-            
-            controls = new THREE.OrbitControls(camera, renderer.domElement);
-            controls.enableDamping = true;
-            controls.dampingFactor = 0.05;
 
             scene.add(new THREE.AmbientLight(0xffffff, 0.6));
             let mainLight = new THREE.DirectionalLight(0xffffff, 0.7); mainLight.position.set(4, 8, 4); scene.add(mainLight);
             let fillLight = new THREE.DirectionalLight(0x38bdf8, 0.4); fillLight.position.set(-4, 4, -4); scene.add(fillLight);
 
-            // เพิ่มตาราง Grid เส้นระนาบพื้นเพื่อให้ผู้ใช้อิงสายตาได้ง่ายว่ามือถือขนานพื้นโลกหรือไม่
-            let gridHelper = new THREE.GridHelper(6, 30, 0x475569, 0x1e293b);
+            // ตาราง Gridระนาบพื้น ช่วยให้อ้างอิงด้วยสายตาได้ง่ายขึ้นมาก
+            let gridHelper = new THREE.GridHelper(5, 20, 0x475569, 0x1e293b);
             gridHelper.position.y = -0.1;
             scene.add(gridHelper);
 
             phoneGroup = new THREE.Group();
 
-            // 📱 สร้างตัวเครื่องสมาร์ทโฟนในลักษณะ "นอนราบขนานไปกับพื้น" ตามเริ่มต้น
+            // 📱 โครงสร้างตัวเครื่องแบบนอนราบ
             const width = 1.2, height = 2.4, depth = 0.12, radius = 0.15;
             let shape = new THREE.Shape();
             shape.moveTo(-width/2 + radius, height/2);
@@ -510,37 +490,24 @@
             
             let bodyMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.2, metalness: 0.8 }); 
             let phoneBody = new THREE.Mesh(bodyGeo, bodyMat);
-            
-            // หมุนให้ตัวเครื่องนอนราบไปกับพื้นผิว (Facing upwards)
             phoneBody.rotation.x = -Math.PI / 2;
             phoneGroup.add(phoneBody);
 
-            // 📺 หน้าจอกระจกเงาหงายขึ้นด้านบน
+            // 📺 หน้าจอด้านบน
             let screenGeo = new THREE.BoxGeometry(width - 0.08, 0.01, height - 0.08);
             let screenMat = new THREE.MeshStandardMaterial({ color: 0x020617, roughness: 0.05, metalness: 0.9 });
             let phoneScreen = new THREE.Mesh(screenGeo, screenMat);
             phoneScreen.position.y = depth / 2 + 0.01;
             phoneGroup.add(phoneScreen);
 
-            // 🎛️ ปุ่มกดข้างเครื่อง (Physical Side Buttons) จัดวางตามโครงสร้างระนาบนอนราบ
-            let buttonMat = new THREE.MeshStandardMaterial({ color: 0x64748b, roughness: 0.1, metalness: 0.9 });
-            let volBtnGeo = new THREE.BoxGeometry(0.04, 0.03, 0.2);
-            let volUpBtn = new THREE.Mesh(volBtnGeo, buttonMat); volUpBtn.position.set(-(width/2 + 0.01), 0, 0.4); phoneGroup.add(volUpBtn);
-            let volDownBtn = new THREE.Mesh(volBtnGeo, buttonMat); volDownBtn.position.set(-(width/2 + 0.01), 0, 0.15); phoneGroup.add(volDownBtn);
-            let powerBtnGeo = new THREE.BoxGeometry(0.04, 0.03, 0.3);
-            let powerBtn = new THREE.Mesh(powerBtnGeo, buttonMat); powerBtn.position.set((width/2 + 0.01), 0, 0.3); phoneGroup.add(powerBtn);
-
-            // 🛠️ ลูกศรบอกแกนทิศทางอิงตามจุดศูนย์กลางระนาบจริงของโทรศัพท์
+            // 🛠️ ลูกศรทิศทางความแม่นยำสูง
             const origin = new THREE.Vector3(0, depth / 2 + 0.03, 0);
             const arrowLength = 1.3;
             const headLength = 0.25;
             const headWidth = 0.15;
 
-            // 🔴 แกน X (สีแดง) ชี้ไปทางขวาตัวเครื่อง (ซ้าย-ขวา)
             let arrowX = new THREE.ArrowHelper(new THREE.Vector3(1, 0, 0), origin, arrowLength, 0xef4444, headLength, headWidth);
-            // 🟢 แกน Y (สีเขียว) ชี้ไปข้างหน้าตามแนวตัวเครื่อง (หัวเครื่อง)
             let arrowY = new THREE.ArrowHelper(new THREE.Vector3(0, 0, -1), origin, arrowLength, 0x22c55e, headLength, headWidth);
-            // 🔵 แกน Z (สีน้ำเงิน) ชี้พุ่งตั้งฉากขึ้นฟ้า (บอกระยะยกความสูงระนาบ)
             let arrowZ = new THREE.ArrowHelper(new THREE.Vector3(0, 1, 0), origin, arrowLength, 0x3b82f6, headLength, headWidth);
 
             arrowX.line.material.linewidth = 5;
@@ -555,8 +522,7 @@
 
             function animate() {
                 requestAnimationFrame(animate);
-                controls.update(); 
-                renderer.render(scene, camera);
+                renderer.render(scene, camera); // รัน Render ปกติโดยไม่ต้องมีตัวคอนโทรลเมาส์มาแทรกแซง
             }
             animate();
 
