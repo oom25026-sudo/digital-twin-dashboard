@@ -250,7 +250,6 @@
 
 <script>
     window.addEventListener('DOMContentLoaded', () => {
-        // เชื่อมต่อ Firebase Realtime Database
         const firebaseConfig = { databaseURL: "https://llllllll-3c932-default-rtdb.asia-southeast1.firebasedatabase.app/" };
         if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
         const db = firebase.database();
@@ -270,7 +269,7 @@
         const lblSet = document.getElementById("lblSet");
         const logOutput = document.getElementById("logOutput");
 
-        // โหลดเลขเซ็ตปัจจุบันเริ่มต้นจาก Firebase เสมอเพื่อเลี่ยงปัญหาเป็น 0
+        // โหลดรอบเซ็ตปัจจุบันจาก Firebase
         db.ref("system/currentSetNum").on("value", (snapshot) => {
             if (snapshot.exists()) {
                 currentSetNum = snapshot.val();
@@ -302,6 +301,7 @@
             }
         });
 
+        // ✨ ฟังก์ชันล้างค่าและเริ่มคำนวณ ROM ใหม่สำหรับรอบถัดไป
         function resetROM() {
             firstPayloadReceived = false;
             minPitch = 0; maxPitch = 0; minRoll = 0; maxRoll = 0;
@@ -315,18 +315,24 @@
             document.getElementById("barRoll").style.width = "0%";
         }
 
+        // คอยดักฟังสัญญาณรีเซ็ตจาก Firebase (เผื่อกดรีเซ็ตจากเครื่องอื่น/มือถือ)
+        db.ref("system/resetSignal").on("value", (snapshot) => {
+            if (snapshot.val() === true) {
+                resetROM();
+            }
+        });
+
         document.getElementById("btnResetROM").onclick = () => {
-            resetROM();
             db.ref("system/resetSignal").set(true).then(() => db.ref("system/resetSignal").set(false));
         };
 
-        // 🔴 ฟังสถานะปุ่มบันทึก/เวลาตรวจจาก Firebase (ทำให้กดเริ่มจากที่ไหนปุ่มก็เปลี่ยนตามกัน)
+        // 🔴 ฟังสถานะเริ่ม/หยุดตรวจการทดสอบ
         db.ref("system/isRecording").on("value", (snapshot) => {
             isRecording = snapshot.val() || false;
             clearInterval(clockInterval);
 
             if (isRecording) {
-                btnStart.textContent = "⏸ หยุดค้างค่าการตรวจ";
+                btnStart.textContent = "⏸ หยุดคค่าการตรวจ";
                 btnStart.style.backgroundColor = "#0ea5e9";
                 btnStart.style.color = "#ffffff";
                 
@@ -341,7 +347,7 @@
             }
         });
 
-        // 📡 ดักฟังข้อมูลเซนเซอร์มือถือ
+        // 📡 ดักฟังข้อมูลเซนเซอร์แบบ Realtime
         db.ref("sensor/live_payload").on("value", (snapshot) => {
             const data = snapshot.val();
             if (!data) return;
@@ -357,6 +363,7 @@
                 phoneMesh.rotation.set(currentPitch * (Math.PI / 180), currentRoll * (Math.PI / 180), -(data.yaw || 0) * (Math.PI / 180), 'YXZ');
             }
 
+            // ถ้าไม่ได้อยู่ในสถานะกดตรวจ (isRecording = false) จะไม่เอามาคำนวณหาค่าขอบเขต ROM
             if (!isRecording) return;
 
             if (!firstPayloadReceived) {
@@ -387,10 +394,9 @@
             document.getElementById("lblTilt").textContent = currentRoll > 0 ? "ขวา " + Math.abs(currentRoll).toFixed(1) + "°" : "ซ้าย " + Math.abs(currentRoll).toFixed(1) + "°";
         });
 
-        // กดเริ่มในคอม -> ส่งข้อมูลเปลี่ยนสถานะขึ้น Firebase
         btnStart.onclick = () => { db.ref("system/isRecording").set(!isRecording); };
 
-        // ✓ ปุ่มบันทึกชุดข้อมูล
+        // ✓ เมื่อกดปุ่มบันทึกชุดข้อมูล (Save Set)
         btnSave.onclick = () => {
             let pRom = document.getElementById("lblPitchROM").textContent.replace('°','');
             let rRom = document.getElementById("lblRollROM").textContent.replace('°','');
@@ -406,7 +412,12 @@
             });
             logOutput.innerHTML = logHTML;
 
-            // บันทึกเลขเซ็ตถัดไปขึ้นระบบ Firebase ป้องกันการหลุดกลับเป็น 0
+            // ⚡ สั่งรีเซ็ตค่า ROM บน Firebase ทันที เพื่อให้เซ็ตถัดไปเริ่มนับใหม่จากศูนย์
+            db.ref("system/resetSignal").set(true).then(() => {
+                db.ref("system/resetSignal").set(false);
+            });
+
+            // ปรับเลขเซ็ตไปข้างหน้าและอัปเดตขึ้น Firebase แกนกลาง
             currentSetNum++;
             db.ref("system/currentSetNum").set(currentSetNum);
             
@@ -415,7 +426,6 @@
             db.ref("system/isRecording").set(false); 
         };
 
-        // ↓ ส่งออกไฟล์รายงานเป็น .CSV
         document.getElementById("btnExport").onclick = () => {
             if(!recordsList.length) return alert("ไม่มีข้อมูลที่จะส่งออกครับ");
             let csv = "Set,Duration_Seconds,Pitch_ROM,Roll_ROM\n";
@@ -425,7 +435,7 @@
             link.href = URL.createObjectURL(blob); link.download = "biomotion_session_report.csv"; link.click();
         };
 
-        // 📐 THREE.js 3D WebGL Setup
+        // 📐 THREE.js Setup
         let scene, camera, renderer, phoneMesh;
         const container3d = document.getElementById("canvas3d");
         if(container3d) {
@@ -442,7 +452,6 @@
             animate();
         }
 
-        // 📱 QR Code Generation
         document.getElementById("btnOpenQR").onclick = () => {
             document.getElementById("qrModal").style.display = "flex";
             document.getElementById("qrcode").innerHTML = "";
