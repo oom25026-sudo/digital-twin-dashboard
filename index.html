@@ -208,7 +208,7 @@
     <div class="header-panel">
         <h1 class="main-title">🏥 Clinical Motion Twin - Bio-Validation & Assessment System</h1>
         <div style="display: flex; gap: 10px;">
-            <button id="btnResetROM" style="background-color: #ef4444; color: white; border: none; padding: 8px 15px; border-radius: 6px; cursor: pointer;">🔄 รีเซ็ตค่า ROM</button>
+            <button id="btnResetROM" style="background-color: #ef4444; color: white; border: none; padding: 8px 15px; border-radius: 6px; cursor: pointer; font-weight: bold;">🔄 รีเซ็ตค่า ROM</button>
             <button id="btnOpenQR" style="background-color: #38bdf8; color: #0f172a; border: none; padding: 8px 15px; border-radius: 6px; cursor: pointer; font-weight: bold;">📱 ต่อมือถือ</button>
         </div>
     </div>
@@ -225,7 +225,7 @@
                     </div>
                     <div class="metric-box" style="padding: 10px;">
                         <div style="font-size: 12px; color: #94a3b8;">ระดับเกรด (Grading)</div>
-                        <div id="lblGrade" style="font-size: 18px; font-weight: bold; margin-top: 7px; color: #64748b;">⏳ รอนิ่ง</div>
+                        <div id="lblGrade" style="font-size: 18px; font-weight: bold; margin-top: 7px; color: #ef4444;">❌ Unstable</div>
                     </div>
                     <div class="metric-box" style="padding: 10px;">
                         <div style="font-size: 12px; color: #94a3b8;">รวมเวลาที่นิ่งสนิท</div>
@@ -244,12 +244,12 @@
 
             <div class="card-panel">
                 <div class="metrics-grid-2" style="margin-top: 0; margin-bottom: 15px;">
-                    <div class="metric-box" style="border-color: #4ade80;">
-                        <div style="font-size: 13px; color: #4ade80;">🏋️‍♂️ องศาการก้ม-เงย (Pitch)</div>
-                        <div id="lblElevation" class="metric-value" style="color: #4ade80; font-size: 24px;">0.0°</div>
+                    <div class="metric-box" style="border-color: #38bdf8;">
+                        <div style="font-size: 13px; color: #38bdf8;">🏋️‍♂️ องศาการยกตัว (Elevation)</div>
+                        <div id="lblElevation" class="metric-value" style="color: #38bdf8; font-size: 24px;">0.0°</div>
                     </div>
                     <div class="metric-box" style="border-color: #fbbf24;">
-                        <div style="font-size: 13px; color: #fbbf24;">🤸‍♂️ องศาการเอียง (Roll)</div>
+                        <div style="font-size: 13px; color: #fbbf24;">🤸‍♂️ องศาการเอียงเครื่อง (Lateral Tilt)</div>
                         <div id="lblTilt" class="metric-value" style="color: #fbbf24; font-size: 24px;">0.0°</div>
                     </div>
                 </div>
@@ -273,7 +273,7 @@
 
         <div>
             <div class="card-panel" style="border-left: 4px solid #a855f7;">
-                <h3 style="margin: 0; color: #a855f7; font-size: 15px;">📊 ผลลัพธ์ ROM รวม</h3>
+                <h3 style="margin: 0; color: #a855f7; font-size: 15px;">📊 ผลลัพธ์ ROM รวมประจำเซ็ต</h3>
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; text-align: center;">
                     <div style="background: #0f172a; padding: 10px; border-radius: 6px;">
                         <span style="font-size: 11px; color:#94a3b8;">Pitch ROM</span>
@@ -316,10 +316,12 @@
 
 <script>
     window.addEventListener('DOMContentLoaded', () => {
+        // 🔗 1. ตั้งค่า Firebase ให้เรียบร้อย
         const firebaseConfig = { databaseURL: "https://llllllll-3c932-default-rtdb.asia-southeast1.firebasedatabase.app/" };
         if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
         const db = firebase.database();
 
+        // 💾 สถานะตัวแปรสำหรับการทำงานหลักภายในระบบ (Core Engine States)
         let isRecording = false;
         let timerCount = 0;
         let clockInterval = null;
@@ -329,26 +331,32 @@
         let minPitch = 0, maxPitch = 0, minRoll = 0, maxRoll = 0;
         let firstPayloadReceived = false;
 
-        // ตัวแปรวิเคราะห์เสถียรภาพ (Stability Analytics States)
         let lastPitch = 0, lastRoll = 0;
-        let stableTicks = 0; // สะสมรอบที่อยู่ในเกณฑ์นิ่งตรง (1 tick ~ ทุกครั้งที่รับข้อมูลเข้า)
-        const targetStableTicks = 50; // ตัวชี้วัดการรักษานิ่งนิ่งสนิทแบบสมบูรณ์
+        let stableTicks = 0; 
+        const targetStableTicks = 60; // จำนวนรอบตรวจจับนิ่งต่อเนื่องเพื่ออัปเดตแถบวัด
 
+        // ดึงอิลิเมนต์ต่าง ๆ จาก UI DOM
         const btnStart = document.getElementById("btnStart");
         const btnSave = document.getElementById("btnSave");
+        const btnExport = document.getElementById("btnExport");
+        const btnResetSession = document.getElementById("btnResetSession");
+        const btnResetROM = document.getElementById("btnResetROM");
+        const btnOpenQR = document.getElementById("btnOpenQR");
+        const btnCloseQR = document.getElementById("btnCloseQR");
+        
         const lblTimer = document.getElementById("lblTimer");
         const lblSet = document.getElementById("lblSet");
         const logOutput = document.getElementById("logOutput");
-        const btnResetSession = document.getElementById("btnResetSession");
-        
         const canvasWrapper = document.getElementById("canvasWrapper");
         const statusBadge = document.getElementById("statusBadge");
 
+        // 🔗 ซิงค์ค่าหมายเลขเซ็ตปัจจุบันจากฐานข้อมูล Firebase Realtime
         db.ref("system/currentSetNum").on("value", (snapshot) => {
             if (snapshot.exists()) { currentSetNum = snapshot.val(); } 
             lblSet.textContent = currentSetNum;
         });
 
+        // 📊 ตั้งค่าโครงสร้าง Chart.js เรียลไทม์
         const ctx = document.getElementById('realtimeChart').getContext('2d');
         const realtimeChart = new Chart(ctx, {
             type: 'line',
@@ -369,6 +377,7 @@
             }
         });
 
+        // ฟังก์ชันล้างรอบค่าช่วงสูงสุดเคลื่อนไหว (ROM Clear Reset)
         function resetROM() {
             firstPayloadReceived = false;
             minPitch = 0; maxPitch = 0; minRoll = 0; maxRoll = 0;
@@ -382,18 +391,24 @@
             if (snapshot.val() === true) { resetROM(); }
         });
 
-        document.getElementById("btnResetROM").onclick = () => {
+        // 🟢 ปุ่ม: รีเซ็ตค่า ROM ประจำเซ็ต
+        btnResetROM.onclick = () => {
             db.ref("system/resetSignal").set(true).then(() => db.ref("system/resetSignal").set(false));
         };
 
+        // 🔗 ซิงค์สถานะการกด บันทึก/ทดสอบ (isRecording State)
         db.ref("system/isRecording").on("value", (snapshot) => {
             isRecording = snapshot.val() || false;
             clearInterval(clockInterval);
+            
             if (isRecording) {
                 btnStart.textContent = "⏸ หยุดค้างค่าการตรวจ";
                 btnStart.style.backgroundColor = "#0ea5e9";
                 btnStart.style.color = "#ffffff";
-                clockInterval = setInterval(() => { timerCount++; lblTimer.textContent = timerCount + " วินาที"; }, 1000);
+                clockInterval = setInterval(() => { 
+                    timerCount++; 
+                    lblTimer.textContent = timerCount + " วินาที"; 
+                }, 1000);
             } else {
                 btnStart.textContent = "• เริ่มการทดสอบ";
                 btnStart.style.backgroundColor = "#38bdf8";
@@ -401,7 +416,70 @@
             }
         });
 
-        // 📡 Realtime Sensor Sync & Stability Analytics Engine
+        // 📱 ปุ่ม: เปิด/ปิด Modal QR-Code เชื่อมต่อสมาร์ตโฟน
+        btnOpenQR.onclick = () => {
+            document.getElementById("qrModal").style.display = "flex";
+            document.getElementById("qrcode").innerHTML = "";
+            let currentURL = window.location.href;
+            let targetURL = currentURL.substring(0, currentURL.lastIndexOf("/")) + "/phone.html";
+            new QRCode(document.getElementById("qrcode"), { text: targetURL, width: 160, height: 160 });
+        };
+        btnCloseQR.onclick = () => { document.getElementById("qrModal").style.display = "none"; };
+
+        // 🟢 ปุ่ม: บันทึกชุดข้อมูลและเปลี่ยนเซ็ตการคำนวณถัดไป
+        btnSave.onclick = () => {
+            let pRom = document.getElementById("lblPitchROM").textContent.replace('°','');
+            let rRom = document.getElementById("lblRollROM").textContent.replace('°','');
+            
+            // ใส่บันทึกเข้าไปในอาร์เรย์เก็บข้อมูลประวัติหลัก
+            recordsList.push({ set: currentSetNum, duration: timerCount, pitchRom: pRom, rollRom: rRom });
+
+            // เรนเดอร์ Log History ฝั่งขวาล่าง
+            let logHTML = "";
+            recordsList.forEach((r) => {
+                logHTML += `<div style="margin-bottom:4px; border-bottom: 1px dashed #334155; padding-bottom: 4px;">ชุดที่ ${r.set} เวลา ${r.duration} วิ (Pitch ROM: ${r.pitchRom}° / Roll ROM: ${r.rollRom}°)</div>`;
+            });
+            logOutput.innerHTML = logHTML;
+
+            // รีเซ็ตล้างสถานะและส่งสัญญานขึ้นระบบ Firebase เซ็ตหมายเลขบวกขึ้น 1 สเตป
+            db.ref("system/resetSignal").set(true).then(() => { db.ref("system/resetSignal").set(false); });
+            currentSetNum++;
+            db.ref("system/currentSetNum").set(currentSetNum);
+            timerCount = 0; 
+            lblTimer.textContent = "0 วินาที"; 
+            db.ref("system/isRecording").set(false); 
+        };
+
+        // 🟢 ปุ่ม: ส่งออกไฟล์ประวัติการตรวจออกมาเป็น .CSV เพื่อดาวน์โหลดใช้งานจริง
+        btnExport.onclick = () => {
+            if(!recordsList.length) { return alert("ไม่มีข้อมูลสำหรับการส่งออกไฟล์ในขณะนี้ครับ โปรดบันทึกเซ็ตข้อมูลก่อนกดดาวน์โหลด"); }
+            let csv = "Set,Duration_Seconds,Pitch_ROM,Roll_ROM\n";
+            recordsList.forEach(r => { csv += `${r.set},${r.duration},${r.pitchRom},${r.rollRom}\n`; });
+            let blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+            let link = document.createElement("a"); 
+            link.href = URL.createObjectURL(blob); 
+            link.download = "clinical_motion_report.csv"; 
+            link.click();
+        };
+
+        // 🟢 ปุ่ม: ล้างทำความสะอาดเซสชันเริ่มประวัติชุดใหม่ทั้งหมด
+        btnResetSession.onclick = () => {
+            if (confirm("คุณต้องการล้างประวัติการทดสอบ และเริ่มต้นเซ็ตที่ 1 ใหม่ทั้งหมดใช่หรือไม่?")) {
+                recordsList = []; 
+                logOutput.innerHTML = `<span style="color: #64748b;">ยังไม่มีการบันทึกชุดข้อมูล...</span>`;
+                timerCount = 0; 
+                lblTimer.textContent = "0 วินาที";
+                stableTicks = 0;
+                db.ref("system/isRecording").set(false); 
+                db.ref("system/currentSetNum").set(1);
+                db.ref("system/resetSignal").set(true).then(() => { db.ref("system/resetSignal").set(false); });
+            }
+        };
+
+        // 🟢 ปุ่ม: เริ่มต้น/หยุดค้าง ค่าระบบการบันทึกการเคลื่อนไหว
+        btnStart.onclick = () => { db.ref("system/isRecording").set(!isRecording); };
+
+        // 📡 ท่อดักรับข้อมูล Payload ดึงค่าและประมวลผลคำนวณเรียลไทม์
         db.ref("sensor/live_payload").on("value", (snapshot) => {
             const data = snapshot.val();
             if (!data) return;
@@ -410,10 +488,12 @@
             let currentRoll = data.roll || 0;   
             let currentYaw = data.yaw || 0;     
 
+            // ฟีดข้อมูลอัปเดตกราฟเส้นสด Chart.js
             realtimeChart.data.datasets[0].data.shift(); realtimeChart.data.datasets[0].data.push(currentPitch);
             realtimeChart.data.datasets[1].data.shift(); realtimeChart.data.datasets[1].data.push(currentRoll);
             realtimeChart.update('none');
 
+            // หมุนโมเดลตัวเครื่อง 3D 
             if (phoneGroup) {
                 phoneGroup.rotation.set(
                     currentPitch * (Math.PI / 180), 
@@ -423,30 +503,30 @@
                 );
             }
 
+            // แสดงค่าผลลัพธ์องศาเรียลไทม์บนหน้าการประเมิน
             document.getElementById("lblElevation").textContent = currentPitch.toFixed(1) + "°";
-            document.getElementById("lblTilt").textContent = currentRoll.toFixed(1) + "°";
+            
+            // ตรวจจับทิศทางการเอียง (ซ้าย / ขวา) ตามความชันของแกน Roll 
+            let tiltDirection = currentRoll >= 0 ? "ขวา " : "ซ้าย ";
+            document.getElementById("lblTilt").textContent = tiltDirection + Math.abs(currentRoll).toFixed(1) + "°";
 
-            // 🧠 คำนวณความสั่นไหวและสถิติวัดระดับความนิ่ง (Jitter & Stability Metrics)
+            // คำนวณหาค่า Jitter อัตรากระเพื่อมสั่นไหวแบบต่อเนื่อง
             let pitchDiff = Math.abs(currentPitch - lastPitch);
             let rollDiff = Math.abs(currentRoll - lastRoll);
-            let jitterIndex = (pitchDiff + rollDiff) / 2; // ค่าเฉลี่ยการเคลื่อนไหวแบบฉับพลัน
+            let jitterIndex = (pitchDiff + rollDiff) / 2;
             
             lastPitch = currentPitch;
             lastRoll = currentRoll;
-
             document.getElementById("lblJitter").textContent = jitterIndex.toFixed(2) + "°";
 
-            // 1. ตรวจสอบความแม่นยำระนาบ (Flatness Rule: Pitch และ Roll ต้องอยู่ภายใน ±1องศา)
+            // ตรวจจับเงื่อนไขระนาบเครื่อง (Flatness Verification Rules)
             let isPerfectFlat = Math.abs(currentPitch) <= 1.0 && Math.abs(currentRoll) <= 1.0;
 
             if (isPerfectFlat) {
-                canvasWrapper.style.borderColor = "#22c55e"; // ขอบเขียว
+                canvasWrapper.style.borderColor = "#22c55e";
                 statusBadge.textContent = "🟩 STABLE (ระดับระนาบตรง)";
-                statusBadge.style.background = "#14532d";
-                statusBadge.style.color = "#4ade80";
-                statusBadge.style.borderColor = "#22c55e";
+                statusBadge.style.background = "#14532d"; statusBadge.style.color = "#4ade80"; statusBadge.style.borderColor = "#22c55e";
 
-                // สะสมเก็บสถิติเวลาถ้าวางนิ่งสนิทจริง
                 stableTicks++;
                 if (jitterIndex < 0.15) {
                     document.getElementById("lblGrade").textContent = "💎 Excellent";
@@ -456,21 +536,18 @@
                     document.getElementById("lblGrade").style.color = "#fbbf24";
                 }
             } else {
-                canvasWrapper.style.borderColor = "#ef4444"; // ขอบแดง
+                canvasWrapper.style.borderColor = "#ef4444";
                 statusBadge.textContent = "🟥 TILTED (เครื่องเอียง)";
-                statusBadge.style.background = "#451a03";
-                statusBadge.style.color = "#f87171";
-                statusBadge.style.borderColor = "#ef4444";
+                statusBadge.style.background = "#451a03"; statusBadge.style.color = "#f87171"; statusBadge.style.borderColor = "#ef4444";
 
                 document.getElementById("lblGrade").textContent = "❌ Unstable";
                 document.getElementById("lblGrade").style.color = "#ef4444";
                 
-                // ลดคะแนนลงทันทีเมื่อหลุดระดับราบ
-                stableTicks = Math.max(0, stableTicks - 3); 
+                stableTicks = Math.max(0, stableTicks - 2); 
             }
 
-            // แสดงผลลัพธ์เป็นเปอร์เซ็นต์และเวลารวมวินาที
-            let stableSeconds = (stableTicks * 0.05); // แปลง Tick เป็นวินาทีโดยประมาณ
+            // คำนวณเวลาและเปอร์เซ็นต์สะสมนิ่งเรียลไทม์
+            let stableSeconds = (stableTicks * 0.05); 
             let stablePercent = Math.min(100, Math.floor((stableTicks / targetStableTicks) * 100));
             
             document.getElementById("lblStableTime").textContent = stableSeconds.toFixed(1) + "s";
@@ -497,54 +574,14 @@
             document.getElementById("lblRollROM").textContent = diffRoll.toFixed(1) + "°";
         });
 
-        btnStart.onclick = () => { db.ref("system/isRecording").set(!isRecording); };
-
-        btnSave.onclick = () => {
-            let pRom = document.getElementById("lblPitchROM").textContent.replace('°','');
-            let rRom = document.getElementById("lblRollROM").textContent.replace('°','');
-            recordsList.push({ set: currentSetNum, duration: timerCount, pitchRom: pRom, rollRom: rRom });
-
-            let logHTML = "";
-            recordsList.forEach((r) => {
-                logHTML += `<div style="margin-bottom:4px; border-bottom: 1px dashed #334155; padding-bottom: 4px;">ชุดที่ ${r.set} เวลา ${r.duration} วิ (Pitch ROM: ${r.pitchRom}° / Roll ROM: ${r.rollRom}°)</div>`;
-            });
-            logOutput.innerHTML = logHTML;
-
-            db.ref("system/resetSignal").set(true).then(() => { db.ref("system/resetSignal").set(false); });
-            currentSetNum++;
-            db.ref("system/currentSetNum").set(currentSetNum);
-            timerCount = 0; lblTimer.textContent = "0 วินาที"; db.ref("system/isRecording").set(false); 
-        };
-
-        btnResetSession.onclick = () => {
-            if (confirm("คุณต้องการล้างประวัติการทดสอบ และเริ่มต้นเซ็ตที่ 1 ใหม่ทั้งหมดใช่หรือไม่?")) {
-                recordsList = []; logOutput.innerHTML = `<span style="color: #64748b;">ยังไม่มีการบันทึกชุดข้อมูล...</span>`;
-                timerCount = 0; lblTimer.textContent = "0 วินาที";
-                db.ref("system/isRecording").set(false); db.ref("system/currentSetNum").set(1);
-                db.ref("system/resetSignal").set(true).then(() => { db.ref("system/resetSignal").set(false); });
-                stableTicks = 0;
-            }
-        };
-
-        document.getElementById("btnExport").onclick = () => {
-            if(!recordsList.length) return alert("ไม่มีข้อมูลที่จะส่งออกครับ");
-            let csv = "Set,Duration_Seconds,Pitch_ROM,Roll_ROM\n";
-            recordsList.forEach(r => { csv += `${r.set},${r.duration},${r.pitchRom},${r.rollRom}\n`; });
-            let blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-            let link = document.createElement("a"); link.href = URL.createObjectURL(blob); link.download = "clinical_motion_report.csv"; link.click();
-        };
-
-        // 📐 FIXED FRONT-TOP VIEW ISOMETRIC CAMERA
+        // 📐 ส่วนแสดงผลและเรนเดอร์โมเดล 3D แบบล็อกพิกัดกล้องความแม่นยำสูง
         let scene, camera, renderer, phoneGroup;
         const container3d = document.getElementById("canvas3d");
         
         if(container3d) {
-            scene = new THREE.Scene(); 
-            scene.background = new THREE.Color(0x0f172a);
-            
+            scene = new THREE.Scene(); scene.background = new THREE.Color(0x0f172a);
             camera = new THREE.PerspectiveCamera(45, container3d.clientWidth / 350, 0.1, 100);
-            camera.position.set(2.2, 2.4, 2.2); 
-            camera.lookAt(0, 0, 0);
+            camera.position.set(2.2, 2.4, 2.2); camera.lookAt(0, 0, 0);
 
             renderer = new THREE.WebGLRenderer({ antialias: true });
             renderer.setSize(container3d.clientWidth, 350);
@@ -559,74 +596,38 @@
             scene.add(gridHelper);
 
             phoneGroup = new THREE.Group();
-
             const width = 1.2, height = 2.4, depth = 0.12, radius = 0.15;
             let shape = new THREE.Shape();
-            shape.moveTo(-width/2 + radius, height/2);
-            shape.lineTo(width/2 - radius, height/2);
-            shape.quadraticCurveTo(width/2, height/2, width/2, height/2 - radius);
-            shape.lineTo(width/2, -height/2 + radius);
-            shape.quadraticCurveTo(width/2, -height/2, width/2 - radius, -height/2);
-            shape.lineTo(-width/2 + radius, -height/2);
-            shape.quadraticCurveTo(-width/2, -height/2, -width/2, -height/2 + radius);
-            shape.lineTo(-width/2, height/2 - radius);
+            shape.moveTo(-width/2 + radius, height/2); shape.lineTo(width/2 - radius, height/2);
+            shape.quadraticCurveTo(width/2, height/2, width/2, height/2 - radius); shape.lineTo(width/2, -height/2 + radius);
+            shape.quadraticCurveTo(width/2, -height/2, width/2 - radius, -height/2); shape.lineTo(-width/2 + radius, -height/2);
+            shape.quadraticCurveTo(-width/2, -height/2, -width/2, -height/2 + radius); shape.lineTo(-width/2, height/2 - radius);
             shape.quadraticCurveTo(-width/2, height/2, -width/2 + radius, height/2);
 
             let extrudeSettings = { depth: depth, bevelEnabled: true, bevelSegments: 3, steps: 1, bevelSize: 0.02, bevelThickness: 0.02 };
-            let bodyGeo = new THREE.ExtrudeGeometry(shape, extrudeSettings);
-            bodyGeo.center(); 
-            
+            let bodyGeo = new THREE.ExtrudeGeometry(shape, extrudeSettings); bodyGeo.center(); 
             let bodyMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.2, metalness: 0.8 }); 
-            let phoneBody = new THREE.Mesh(bodyGeo, bodyMat);
-            phoneBody.rotation.x = -Math.PI / 2;
-            phoneGroup.add(phoneBody);
+            let phoneBody = new THREE.Mesh(bodyGeo, bodyMat); phoneBody.rotation.x = -Math.PI / 2; phoneGroup.add(phoneBody);
 
             let screenGeo = new THREE.BoxGeometry(width - 0.08, 0.01, height - 0.08);
             let screenMat = new THREE.MeshStandardMaterial({ color: 0x020617, roughness: 0.05, metalness: 0.9 });
-            let phoneScreen = new THREE.Mesh(screenGeo, screenMat);
-            phoneScreen.position.y = depth / 2 + 0.01;
-            phoneGroup.add(phoneScreen);
+            let phoneScreen = new THREE.Mesh(screenGeo, screenMat); phoneScreen.position.y = depth / 2 + 0.01; phoneGroup.add(phoneScreen);
 
             const origin = new THREE.Vector3(0, depth / 2 + 0.03, 0);
-            const arrowLength = 1.3;
-            const headLength = 0.25;
-            const headWidth = 0.15;
-
-            let arrowX = new THREE.ArrowHelper(new THREE.Vector3(1, 0, 0), origin, arrowLength, 0xef4444, headLength, headWidth);
-            let arrowY = new THREE.ArrowHelper(new THREE.Vector3(0, 0, -1), origin, arrowLength, 0x22c55e, headLength, headWidth);
-            let arrowZ = new THREE.ArrowHelper(new THREE.Vector3(0, 1, 0), origin, arrowLength, 0x3b82f6, headLength, headWidth);
-
-            arrowX.line.material.linewidth = 5;
-            arrowY.line.material.linewidth = 5;
-            arrowZ.line.material.linewidth = 5;
-
-            phoneGroup.add(arrowX);
-            phoneGroup.add(arrowY);
-            phoneGroup.add(arrowZ);
-
+            let arrowX = new THREE.ArrowHelper(new THREE.Vector3(1, 0, 0), origin, 1.3, 0xef4444, 0.25, 0.15);
+            let arrowY = new THREE.ArrowHelper(new THREE.Vector3(0, 0, -1), origin, 1.3, 0x22c55e, 0.25, 0.15);
+            let arrowZ = new THREE.ArrowHelper(new THREE.Vector3(0, 1, 0), origin, 1.3, 0x3b82f6, 0.25, 0.15);
+            phoneGroup.add(arrowX); phoneGroup.add(arrowY); phoneGroup.add(arrowZ);
             scene.add(phoneGroup);
 
-            function animate() {
-                requestAnimationFrame(animate);
-                renderer.render(scene, camera);
-            }
+            function animate() { requestAnimationFrame(animate); renderer.render(scene, camera); }
             animate();
 
             window.addEventListener('resize', () => {
-                camera.aspect = container3d.clientWidth / 350;
-                camera.updateProjectionMatrix();
+                camera.aspect = container3d.clientWidth / 350; camera.updateProjectionMatrix();
                 renderer.setSize(container3d.clientWidth, 350);
             });
         }
-
-        document.getElementById("btnOpenQR").onclick = () => {
-            document.getElementById("qrModal").style.display = "flex";
-            document.getElementById("qrcode").innerHTML = "";
-            let currentURL = window.location.href;
-            let targetURL = currentURL.substring(0, currentURL.lastIndexOf("/")) + "/phone.html";
-            new QRCode(document.getElementById("qrcode"), { text: targetURL, width: 160, height: 160 });
-        };
-        document.getElementById("btnCloseQR").onclick = () => { document.getElementById("qrModal").style.display = "none"; };
         
         resetROM();
     });
