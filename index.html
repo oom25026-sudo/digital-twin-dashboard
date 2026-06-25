@@ -7,6 +7,7 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
@@ -76,11 +77,15 @@
         }
         #canvas3d {
             width: 100%;
-            height: 260px;
+            height: 320px;
             background-color: #0f172a;
             border-radius: 8px;
             border: 1px solid #334155;
             margin-bottom: 15px;
+            cursor: grab;
+        }
+        #canvas3d:active {
+            cursor: grabbing;
         }
         .chart-container {
             position: relative;
@@ -213,6 +218,7 @@
                         <div id="lblTilt" class="metric-value" style="color: #fbbf24; font-size: 24px;">0.0°</div>
                     </div>
                 </div>
+                <div style="font-size: 11px; color:#64748b; margin-bottom:6px; text-align:right;">💡 ใช้เมาส์คลิกลากเพื่อหมุนปรับมุมกล้อง 3D ได้อิสระ</div>
                 <div id="canvas3d"></div>
                 <div class="chart-container">
                     <canvas id="realtimeChart"></canvas>
@@ -271,18 +277,13 @@
         const logOutput = document.getElementById("logOutput");
         const btnResetSession = document.getElementById("btnResetSession");
 
-        // โหลดรอบเซ็ตปัจจุบันจาก Firebase
         db.ref("system/currentSetNum").on("value", (snapshot) => {
-            if (snapshot.exists()) {
-                currentSetNum = snapshot.val();
-            } else {
-                currentSetNum = 1;
-                db.ref("system/currentSetNum").set(1);
-            }
+            if (snapshot.exists()) { currentSetNum = snapshot.val(); } 
+            else { currentSetNum = 1; db.ref("system/currentSetNum").set(1); }
             lblSet.textContent = currentSetNum;
         });
 
-        // 📊 Initialize Chart.js
+        // 📊 Chart.js Initialization
         const ctx = document.getElementById('realtimeChart').getContext('2d');
         const realtimeChart = new Chart(ctx, {
             type: 'line',
@@ -326,7 +327,6 @@
             db.ref("system/resetSignal").set(true).then(() => db.ref("system/resetSignal").set(false));
         };
 
-        // 🔴 ฟังสถานะปุ่มบันทึก
         db.ref("system/isRecording").on("value", (snapshot) => {
             isRecording = snapshot.val() || false;
             clearInterval(clockInterval);
@@ -335,11 +335,7 @@
                 btnStart.textContent = "⏸ หยุดค้างค่าการตรวจ";
                 btnStart.style.backgroundColor = "#0ea5e9";
                 btnStart.style.color = "#ffffff";
-                
-                clockInterval = setInterval(() => {
-                    timerCount++;
-                    lblTimer.textContent = timerCount + " วินาที";
-                }, 1000);
+                clockInterval = setInterval(() => { timerCount++; lblTimer.textContent = timerCount + " วินาที"; }, 1000);
             } else {
                 btnStart.textContent = "• เริ่มการทดสอบ";
                 btnStart.style.backgroundColor = "#38bdf8";
@@ -347,7 +343,7 @@
             }
         });
 
-        // 📡 ดักฟังข้อมูลเซนเซอร์มือถือแบบ Realtime
+        // 📡 Realtime Sensor Sync
         db.ref("sensor/live_payload").on("value", (snapshot) => {
             const data = snapshot.val();
             if (!data) return;
@@ -359,6 +355,7 @@
             realtimeChart.data.datasets[1].data.shift(); realtimeChart.data.datasets[1].data.push(currentRoll);
             realtimeChart.update('none');
 
+            // หมุนกลุ่มโมเดล 3D
             if (phoneGroup) {
                 phoneGroup.rotation.set(
                     currentPitch * (Math.PI / 180), 
@@ -403,42 +400,25 @@
         btnSave.onclick = () => {
             let pRom = document.getElementById("lblPitchROM").textContent.replace('°','');
             let rRom = document.getElementById("lblRollROM").textContent.replace('°','');
-
-            recordsList.push({
-                set: currentSetNum, duration: timerCount,
-                pitchRom: pRom, rollRom: rRom
-            });
+            recordsList.push({ set: currentSetNum, duration: timerCount, pitchRom: pRom, rollRom: rRom });
 
             let logHTML = "";
             recordsList.forEach((r) => {
-                logHTML += `<div style="margin-bottom:4px; border-bottom: 1px dashed #334155; padding-bottom: 4px;">ชุดที่ ${r.set} [accuracy] เวลา ${r.duration} วิ (Pitch ROM: ${r.pitchRom}° / Roll ROM: ${r.rollRom}°)</div>`;
+                logHTML += `<div style="margin-bottom:4px; border-bottom: 1px dashed #334155; padding-bottom: 4px;">ชุดที่ ${r.set} เวลา ${r.duration} วิ (Pitch ROM: ${r.pitchRom}° / Roll ROM: ${r.rollRom}°)</div>`;
             });
             logOutput.innerHTML = logHTML;
 
             db.ref("system/resetSignal").set(true).then(() => { db.ref("system/resetSignal").set(false); });
-
             currentSetNum++;
             db.ref("system/currentSetNum").set(currentSetNum);
-            
-            timerCount = 0;
-            lblTimer.textContent = "0 วินาที";
-            db.ref("system/isRecording").set(false); 
+            timerCount = 0; lblTimer.textContent = "0 วินาที"; db.ref("system/isRecording").set(false); 
         };
 
-        // ✨ ฟังก์ชันเมื่อผู้ใช้งานกดปุ่มล้างประวัติ/รีเซ็ตเซสชันหลักทั้งหมด
         btnResetSession.onclick = () => {
             if (confirm("คุณต้องการล้างประวัติการทดสอบ และเริ่มต้นเซ็ตที่ 1 ใหม่ทั้งหมดใช่หรือไม่?")) {
-                recordsList = []; // ล้างอาร์เรย์เก็บข้อมูล
-                logOutput.innerHTML = `<span style="color: #64748b;">ยังไม่มีการบันทึกชุดข้อมูล...</span>`;
-                
-                timerCount = 0;
-                lblTimer.textContent = "0 วินาที";
-                
-                // สั่งหยุดตรวจวัด และเซ็ตค่าเลขรอบกลับไปเป็น 1 บน Firebase แกนกลาง
-                db.ref("system/isRecording").set(false);
-                db.ref("system/currentSetNum").set(1);
-                
-                // ล้างค่าหน้าริวิวมุมมององศาให้กลับเป็น 0
+                recordsList = []; logOutput.innerHTML = `<span style="color: #64748b;">ยังไม่มีการบันทึกชุดข้อมูล...</span>`;
+                timerCount = 0; lblTimer.textContent = "0 วินาที";
+                db.ref("system/isRecording").set(false); db.ref("system/currentSetNum").set(1);
                 db.ref("system/resetSignal").set(true).then(() => { db.ref("system/resetSignal").set(false); });
             }
         };
@@ -448,45 +428,121 @@
             let csv = "Set,Duration_Seconds,Pitch_ROM,Roll_ROM\n";
             recordsList.forEach(r => { csv += `${r.set},${r.duration},${r.pitchRom},${r.rollRom}\n`; });
             let blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-            let link = document.createElement("a");
-            link.href = URL.createObjectURL(blob); link.download = "biomotion_session_report.csv"; link.click();
+            let link = document.createElement("a"); link.href = URL.createObjectURL(blob); link.download = "biomotion_session_report.csv"; link.click();
         };
 
-        // 📐 THREE.js Setup
-        let scene, camera, renderer, phoneGroup;
+        // 📐 HIGH-FIDELITY 3D MOBILE MODEL WITH CUSTOM THICK AXIS ARROWS
+        let scene, camera, renderer, phoneGroup, controls;
         const container3d = document.getElementById("canvas3d");
+        
         if(container3d) {
-            scene = new THREE.Scene(); scene.background = new THREE.Color(0x0f172a);
-            camera = new THREE.PerspectiveCamera(45, container3d.clientWidth / 260, 0.1, 100);
-            camera.position.set(2.2, 1.8, 3.2); camera.lookAt(0, 0, 0);
+            scene = new THREE.Scene(); 
+            scene.background = new THREE.Color(0x0f172a);
+            
+            camera = new THREE.PerspectiveCamera(45, container3d.clientWidth / 320, 0.1, 100);
+            camera.position.set(2.5, 2.0, 3.5);
             
             renderer = new THREE.WebGLRenderer({ antialias: true });
-            renderer.setSize(container3d.clientWidth, 260); container3d.appendChild(renderer.domElement);
+            renderer.setSize(container3d.clientWidth, 320);
+            container3d.appendChild(renderer.domElement);
             
-            scene.add(new THREE.AmbientLight(0xffffff, 0.7));
-            let dirLight = new THREE.DirectionalLight(0xffffff, 0.6); dirLight.position.set(5, 8, 5); scene.add(dirLight);
-            
+            // เพิ่มระบบควบคุมมุมกล้องด้วยเมาส์ (OrbitControls)
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+            controls.maxPolarAngle = Math.PI / 2 + 0.3; // ล็อกไม่ให้มุมกล้องมุดลงใต้พื้นมากเกินไป
+
+            // เซ็ตระบบแสงเงาแบบสตูดิโอระดับโปร
+            scene.add(new THREE.AmbientLight(0xffffff, 0.5));
+            let mainLight = new THREE.DirectionalLight(0xffffff, 0.7); mainLight.position.set(4, 8, 4); scene.add(mainLight);
+            let fillLight = new THREE.DirectionalLight(0x38bdf8, 0.4); fillLight.position.set(-4, -2, 4); scene.add(fillLight);
+            let rimLight = new THREE.DirectionalLight(0xffffff, 0.3); rimLight.position.set(0, 4, -5); scene.add(rimLight);
+
+            // กลุ่มวัตถุมือถือหลัก
             phoneGroup = new THREE.Group();
 
-            let bodyGeo = new THREE.BoxGeometry(1.2, 2.2, 0.15);
-            let bodyMat = new THREE.MeshStandardMaterial({ color: 0x0284c7, roughness: 0.3 });
+            // 📱 สร้างตัวเครื่องแบบโค้งมน (Rounded Smartphone Body)
+            const width = 1.2, height = 2.4, depth = 0.12, radius = 0.15;
+            let shape = new THREE.Shape();
+            shape.moveTo(-width/2 + radius, height/2);
+            shape.lineTo(width/2 - radius, height/2);
+            shape.quadraticCurveTo(width/2, height/2, width/2, height/2 - radius);
+            shape.lineTo(width/2, -height/2 + radius);
+            shape.quadraticCurveTo(width/2, -height/2, width/2 - radius, -height/2);
+            shape.lineTo(-width/2 + radius, -height/2);
+            shape.quadraticCurveTo(-width/2, -height/2, -width/2, -height/2 + radius);
+            shape.lineTo(-width/2, height/2 - radius);
+            shape.quadraticCurveTo(-width/2, height/2, -width/2 + radius, height/2);
+
+            let extrudeSettings = { depth: depth, bevelEnabled: true, bevelSegments: 3, steps: 1, bevelSize: 0.02, bevelThickness: 0.02 };
+            let bodyGeo = new THREE.ExtrudeGeometry(shape, extrudeSettings);
+            bodyGeo.center(); // จัดให้อยู่ตรงกลางกึ่งกลางพอดี
+            let bodyMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.2, metalness: 0.8 }); // บอดี้ไทเทเนียมสีเข้ม คมเข้มสปอร์ต
             let phoneBody = new THREE.Mesh(bodyGeo, bodyMat);
             phoneGroup.add(phoneBody);
 
-            let screenGeo = new THREE.BoxGeometry(1.1, 2.0, 0.02);
-            let screenMat = new THREE.MeshBasicMaterial({ color: 0x1e293b });
+            // 📺 หน้าจอกระจกเงาไฮกลอส (Glossy Front Glass Panel)
+            let screenGeo = new THREE.BoxGeometry(width - 0.08, height - 0.08, 0.01);
+            let screenMat = new THREE.MeshStandardMaterial({ color: 0x020617, roughness: 0.05, metalness: 0.9 });
             let phoneScreen = new THREE.Mesh(screenGeo, screenMat);
-            phoneScreen.position.z = 0.08;
+            phoneScreen.position.z = depth / 2 + 0.01;
             phoneGroup.add(phoneScreen);
 
-            let axisHelper = new THREE.AxesHelper(1.5);
-            axisHelper.position.z = 0.1; 
-            phoneGroup.add(axisHelper);
+            // 📸 กล้องหลังดีไซน์โมเดิร์น
+            let camBoxGeo = new THREE.BoxGeometry(0.35, 0.7, 0.03);
+            let camBoxMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.4 });
+            let camBox = new THREE.Mesh(camBoxGeo, camBoxMat);
+            camBox.position.set(-0.3, 0.7, -(depth / 2 + 0.02));
+            phoneGroup.add(camBox);
+
+            let lensGeo = new THREE.CylinderGeometry(0.09, 0.09, 0.02, 32);
+            let lensMat = new THREE.MeshStandardMaterial({ color: 0x020617, roughness: 0.1 });
+            for(let i=0; i<2; i++) {
+                let lens = new THREE.Mesh(lensGeo, lensMat);
+                lens.rotation.x = Math.PI / 2;
+                lens.position.set(-0.3, 0.85 - (i * 0.3), -(depth / 2 + 0.03));
+                phoneGroup.add(lens);
+            }
+
+            // 🛠️ เส้นแกน 3 มิติ ชนิดหนาและมองเห็นได้ชัดเจนสุดๆ (3D Thick Arrow Helpers)
+            // ยกแกนลูกศรให้ลอยขึ้นเหนือหน้าจอมือถือเล็กน้อยเพื่อเล็งทิศทางได้อย่างแม่นยำไม่โดนโมเดลกลืน
+            const origin = new THREE.Vector3(0, 0, depth / 2 + 0.05);
+            const arrowLength = 1.3;
+            const headLength = 0.25;
+            const headWidth = 0.15;
+
+            // แกน X (สีแดง) - Pitch
+            let arrowX = new THREE.ArrowHelper(new THREE.Vector3(1, 0, 0), origin, arrowLength, 0xef4444, headLength, headWidth);
+            // แกน Y (สีเขียว) - Roll
+            let arrowY = new THREE.ArrowHelper(new THREE.Vector3(0, 1, 0), origin, arrowLength, 0x22c55e, headLength, headWidth);
+            // แกน Z (สีน้ำเงิน) - Yaw
+            let arrowZ = new THREE.ArrowHelper(new THREE.Vector3(0, 0, 1), origin, arrowLength, 0x3b82f6, headLength, headWidth);
+
+            // ปรับขนาดความหนาของเส้นก้านลูกศรให้ชัดเจนขึ้นอีก 3 เท่า
+            arrowX.line.material.linewidth = 4;
+            arrowY.line.material.linewidth = 4;
+            arrowZ.line.material.linewidth = 4;
+
+            phoneGroup.add(arrowX);
+            phoneGroup.add(arrowY);
+            phoneGroup.add(arrowZ);
 
             scene.add(phoneGroup);
 
-            function animate() { requestAnimationFrame(animate); renderer.render(scene, camera); }
+            // ฟังก์ชันเรนเดอร์ภาพเคลื่อนไหว
+            function animate() {
+                requestAnimationFrame(animate);
+                controls.update(); // อัปเดตมุมกล้องตามการลากเมาส์
+                renderer.render(scene, camera);
+            }
             animate();
+
+            // คอยอัปเดตขนาดหน้าต่าง 3D เมื่อมีการยืดหดเบราว์เซอร์
+            window.addEventListener('resize', () => {
+                camera.aspect = container3d.clientWidth / 320;
+                camera.updateProjectionMatrix();
+                renderer.setSize(container3d.clientWidth, 320);
+            });
         }
 
         document.getElementById("btnOpenQR").onclick = () => {
