@@ -514,12 +514,15 @@
             let currentPitch = filteredPitch;
             let currentRoll = filteredRoll;
 
-            // อัปเดตกราฟเส้นสด Chart.js
+            // 🛑 เงื่อนไขเพิ่มเติม: ถ้าไม่ได้อยู่ในสถานะทดสอบ (isRecording == false) ให้หยุดการทำงานทั้งหมดด้านล่างทันที
+            if (!isRecording) return;
+
+            // อัปเดตกราฟเส้นสด Chart.js (เฉพาะตอนทดสอบ)
             realtimeChart.data.datasets[0].data.shift(); realtimeChart.data.datasets[0].data.push(currentPitch);
             realtimeChart.data.datasets[1].data.shift(); realtimeChart.data.datasets[1].data.push(currentRoll);
             realtimeChart.update('none');
 
-            // หมุนโมเดลตัวเครื่อง 3D 
+            // หมุนโมเดลตัวเครื่อง 3D (เฉพาะตอนทดสอบ)
             if (phoneGroup) {
                 phoneGroup.rotation.set(
                     currentPitch * (Math.PI / 180), 
@@ -529,7 +532,7 @@
                 );
             }
 
-            // แสดงค่าผลลัพธ์องศาเรียลไทม์
+            // แสดงค่าผลลัพธ์องศาเรียลไทม์ (หยุดอัปเดตเมื่อกดหยุดการทดสอบ)
             document.getElementById("lblElevation").textContent = currentPitch.toFixed(1) + "°";
             
             let tiltDirection = currentRoll >= 0 ? "ขวา " : "ซ้าย ";
@@ -578,8 +581,6 @@
             document.getElementById("lblStableTime").textContent = stableSeconds.toFixed(1) + "s";
             document.getElementById("lblStablePercent").textContent = stablePercent + "%";
             document.getElementById("barStableProgress").style.width = stablePercent + "%";
-
-            if (!isRecording) return;
 
             if (!firstPayloadReceived) {
                 minPitch = currentPitch; maxPitch = currentPitch;
