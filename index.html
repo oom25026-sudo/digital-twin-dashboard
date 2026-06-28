@@ -49,30 +49,26 @@
             padding: 20px;
             margin-bottom: 20px;
         }
-        .metrics-grid-2 {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 15px;
-            margin-top: 15px;
-        }
         .metrics-grid-3 {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
             gap: 10px;
             margin-top: 12px;
         }
-        .metric-box {
+        /* Single Metric Dashboard Card */
+        .single-metric-box {
             background: #0f172a;
-            padding: 15px;
-            border-radius: 8px;
-            border: 1px solid #334155;
+            border: 1px solid #38bdf8;
+            border-radius: 10px;
             text-align: center;
+            padding: 20px;
+            margin-bottom: 15px;
         }
         .metric-value {
-            font-size: 32px;
+            font-size: 36px;
             font-weight: bold;
-            color: #f1f5f9;
-            margin-top: 5px;
+            color: #38bdf8;
+            margin-top: 8px;
         }
         .canvas-container {
             position: relative;
@@ -243,15 +239,10 @@
             </div>
 
             <div class="card-panel">
-                <div class="metrics-grid-2" style="margin-top: 0; margin-bottom: 15px;">
-                    <div class="metric-box" style="border-color: #38bdf8;">
-                        <div style="font-size: 13px; color: #38bdf8;">🏋️‍♂️ องศาการยกตัว (Elevation)</div>
-                        <div id="lblElevation" class="metric-value" style="color: #38bdf8; font-size: 24px;">0.0°</div>
-                    </div>
-                    <div class="metric-box" style="border-color: #fbbf24;">
-                        <div style="font-size: 13px; color: #fbbf24;">🤸‍♂️ องศาการเอียงเครื่อง (Lateral Tilt)</div>
-                        <div id="lblTilt" class="metric-value" style="color: #fbbf24; font-size: 24px;">0.0°</div>
-                    </div>
+                <!-- 🛠️ ปรับเหลือเฉพาะกล่องแสดงองศาการยกตัว (Elevation) ตามความต้องการ -->
+                <div class="single-metric-box">
+                    <div style="font-size: 14px; color: #38bdf8; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">🏋️‍♂️ องศาการยกตัว (Elevation)</div>
+                    <div id="lblElevation" class="metric-value">0.0°</div>
                 </div>
 
                 <div class="axis-legend">
@@ -333,14 +324,14 @@
 
         let lastPitch = 0, lastRoll = 0;
         let stableTicks = 0;
-        const targetStableTicks = 60; // จำนวนรอบตรวจจับนิ่งต่อเนื่องเพื่ออัปเดตแถบวัด
+        const targetStableTicks = 60;
 
         // 🌀 Complementary Filter Engine Parameters
         let filteredPitch = 0;
         let filteredRoll = 0;
         let lastTimestamp = Date.now();
         let isFirstRun = true;
-        const ALPHA = 0.96; // ค่าสัมประสิทธิ์การถ่วงสัดส่วนน้ำหนัก (Gyro 96% / Accel 4%)
+        const ALPHA = 0.96;
 
         // ดึงอิลิเมนต์ต่าง ๆ จาก UI DOM
         const btnStart = document.getElementById("btnStart");
@@ -384,26 +375,22 @@
             }
         });
 
-        // ฟังก์ชันล้างรอบค่าช่วงสูงสุดเคลื่อนไหว (ROM Clear Reset)
         function resetROM() {
             firstPayloadReceived = false;
             minPitch = 0; maxPitch = 0; minRoll = 0; maxRoll = 0;
             document.getElementById("lblPitchROM").textContent = "0.0°";
             document.getElementById("lblRollROM").textContent = "0.0°";
             document.getElementById("lblElevation").textContent = "0.0°";
-            document.getElementById("lblTilt").textContent = "0.0°";
         }
 
         db.ref("system/resetSignal").on("value", (snapshot) => {
             if (snapshot.val() === true) { resetROM(); }
         });
 
-        // 🟢 ปุ่ม: รีเซ็ตค่า ROM ประจำเซ็ต
         btnResetROM.onclick = () => {
             db.ref("system/resetSignal").set(true).then(() => db.ref("system/resetSignal").set(false));
         };
 
-        // 🔗 ซิงค์สถานะการกด บันทึก/ทดสอบ (isRecording State)
         db.ref("system/isRecording").on("value", (snapshot) => {
             isRecording = snapshot.val() || false;
             clearInterval(clockInterval);
@@ -423,7 +410,6 @@
             }
         });
 
-        // 📱 ปุ่ม: เปิด/ปิด Modal QR-Code เชื่อมต่อสมาร์ตโฟน
         btnOpenQR.onclick = () => {
             document.getElementById("qrModal").style.display = "flex";
             document.getElementById("qrcode").innerHTML = "";
@@ -433,12 +419,10 @@
         };
         btnCloseQR.onclick = () => { document.getElementById("qrModal").style.display = "none"; };
 
-        // 🟢 ปุ่ม: บันทึกชุดข้อมูลและเปลี่ยนเซ็ตการคำนวณถัดไป
         btnSave.onclick = () => {
             let pRom = document.getElementById("lblPitchROM").textContent.replace('°','');
             let rRom = document.getElementById("lblRollROM").textContent.replace('°','');
             
-            // เก็บข้อมูลภาพรวมของเซ็ตนั้นๆ ลงรายการประวัติ
             recordsList.push({ 
                 set: currentSetNum, 
                 duration: timerCount, 
@@ -460,11 +444,9 @@
             db.ref("system/isRecording").set(false); 
         };
 
-        // 🟢 ปุ่ม: ส่งออกไฟล์ประวัติการตรวจออกมาเป็น .CSV (พ่วงข้อมูลดิบเซนเซอร์ และ Timestamp ล่าสุด)
         btnExport.onclick = () => {
             if(!recordsList.length) { return alert("ไม่มีข้อมูลสำหรับการส่งออกไฟล์ในขณะนี้ครับ โปรดบันทึกเซ็ตข้อมูลก่อนกดดาวน์โหลด"); }
             
-            // เพิ่มหัวข้อคอลัมน์ของไฟล์ CSV ให้มี Timestamp และค่าดิบจากเซนเซอร์ด้วยเพื่อทำ Data Science / Analytics ต่อได้ง่าย
             let csv = "Set,Duration_Seconds,Pitch_ROM,Roll_ROM,Last_Accel_Pitch,Last_Accel_Roll,Last_Gyro_Pitch,Last_Gyro_Roll,Export_Timestamp\n";
             let isoTimestamp = new Date().toISOString();
 
@@ -479,7 +461,6 @@
             link.click();
         };
 
-        // 🟢 ปุ่ม: ล้างทำความสะอาดเซสชันเริ่มประวัติชุดใหม่ทั้งหมด
         btnResetSession.onclick = () => {
             if (confirm("คุณต้องการล้างประวัติการทดสอบ และเริ่มต้นเซ็ตที่ 1 ใหม่ทั้งหมดใช่หรือไม่?")) {
                 recordsList = []; 
@@ -493,21 +474,17 @@
             }
         };
 
-        // 🟢 ปุ่ม: เริ่มต้น/หยุดค้าง ค่าระบบการบันทึกการเคลื่อนไหว
         btnStart.onclick = () => { db.ref("system/isRecording").set(!isRecording); };
 
-        // 📡 ท่อดักรับข้อมูล Payload ดึงค่าและประมวลผลคำนวณเรียลไทม์
         db.ref("sensor/live_payload").on("value", (snapshot) => {
             const data = snapshot.val();
             if (!data) return;
 
-            // ⏱️ คำนวณหากระแสเวลาสุ่มวัด (dt)
             let currentTime = Date.now();
             let dt = (currentTime - lastTimestamp) / 1000.0;
             lastTimestamp = currentTime;
             if (dt <= 0 || dt > 0.5) dt = 0.01; 
 
-            // 📥 ดึงข้อมูลเซนเซอร์ Accelerometer และ Gyroscope
             let accelPitch = data.accel_pitch !== undefined ? data.accel_pitch : (data.pitch || 0);
             let accelRoll = data.accel_roll !== undefined ? data.accel_roll : (data.roll || 0);
             let gyroRatePitch = data.gyro_pitch_rate || 0; 
@@ -520,22 +497,18 @@
                 isFirstRun = false;
             }
 
-            // 🌀 Complementary Filter ผสานสัญญาณแอกเซอเลอโรมิเตอร์และไจโรสโคป
             filteredPitch = ALPHA * (filteredPitch + gyroRatePitch * dt) + (1.0 - ALPHA) * accelPitch;
             filteredRoll = ALPHA * (filteredRoll + gyroRateRoll * dt) + (1.0 - ALPHA) * accelRoll;
 
             let currentPitch = filteredPitch;
             let currentRoll = filteredRoll;
 
-            // 🛑 หากหยุดการทดสอบ (isRecording == false) จะหยุดอัปเดตค่าและค้างหน้าจอไว้
             if (!isRecording) return;
 
-            // อัปเดตกราฟเส้นสด Chart.js (เฉพาะตอนทดสอบ)
             realtimeChart.data.datasets[0].data.shift(); realtimeChart.data.datasets[0].data.push(currentPitch);
             realtimeChart.data.datasets[1].data.shift(); realtimeChart.data.datasets[1].data.push(currentRoll);
             realtimeChart.update('none');
 
-            // หมุนโมเดลตัวเครื่อง 3D (เฉพาะตอนทดสอบ)
             if (phoneGroup) {
                 phoneGroup.rotation.set(
                     currentPitch * (Math.PI / 180), 
@@ -545,13 +518,8 @@
                 );
             }
 
-            // แสดงค่าผลลัพธ์องศาเรียลไทม์
             document.getElementById("lblElevation").textContent = currentPitch.toFixed(1) + "°";
-            
-            let tiltDirection = currentRoll >= 0 ? "ขวา " : "ซ้าย ";
-            document.getElementById("lblTilt").textContent = tiltDirection + Math.abs(currentRoll).toFixed(1) + "°";
 
-            // คำนวณหาค่า Jitter อัตรากระเพื่อมสั่นไหวแบบต่อเนื่อง
             let pitchDiff = Math.abs(currentPitch - lastPitch);
             let rollDiff = Math.abs(currentRoll - lastRoll);
             let jitterIndex = (pitchDiff + rollDiff) / 2;
@@ -560,7 +528,6 @@
             lastRoll = currentRoll;
             document.getElementById("lblJitter").textContent = jitterIndex.toFixed(2) + "°";
 
-            // ตรวจจับเงื่อนไขระนาบเครื่อง (Flatness Verification Rules)
             let isPerfectFlat = Math.abs(currentPitch) <= 1.0 && Math.abs(currentRoll) <= 1.0;
 
             if (isPerfectFlat) {
@@ -587,7 +554,6 @@
                 stableTicks = Math.max(0, stableTicks - 2); 
             }
 
-            // คำนวณเวลาและเปอร์เซ็นต์สะสมนิ่งเรียลไทม์
             let stableSeconds = (stableTicks * 0.05);  
             let stablePercent = Math.min(100, Math.floor((stableTicks / targetStableTicks) * 100));
             
@@ -613,7 +579,7 @@
             document.getElementById("lblRollROM").textContent = diffRoll.toFixed(1) + "°";
         });
 
-        // 📐 ส่วนแสดงผลและเรนเดอร์โมเดล 3D แบบล็อกพิกัดกล้องความแม่นยำสูง
+        // 📐 THREE.js 3D Engine Setup
         let scene, camera, renderer, phoneGroup;
         const container3d = document.getElementById("canvas3d");
         
