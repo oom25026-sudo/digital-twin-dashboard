@@ -438,7 +438,13 @@
             let pRom = document.getElementById("lblPitchROM").textContent.replace('°','');
             let rRom = document.getElementById("lblRollROM").textContent.replace('°','');
             
-            recordsList.push({ set: currentSetNum, duration: timerCount, pitchRom: pRom, rollRom: rRom });
+            // เก็บข้อมูลภาพรวมของเซ็ตนั้นๆ ลงรายการประวัติ
+            recordsList.push({ 
+                set: currentSetNum, 
+                duration: timerCount, 
+                pitchRom: pRom, 
+                rollRom: rRom
+            });
 
             let logHTML = "";
             recordsList.forEach((r) => {
@@ -454,15 +460,22 @@
             db.ref("system/isRecording").set(false); 
         };
 
-        // 🟢 ปุ่ม: ส่งออกไฟล์ประวัติการตรวจออกมาเป็น .CSV เพื่อดาวน์โหลดใช้งานจริง
+        // 🟢 ปุ่ม: ส่งออกไฟล์ประวัติการตรวจออกมาเป็น .CSV (พ่วงข้อมูลดิบเซนเซอร์ และ Timestamp ล่าสุด)
         btnExport.onclick = () => {
             if(!recordsList.length) { return alert("ไม่มีข้อมูลสำหรับการส่งออกไฟล์ในขณะนี้ครับ โปรดบันทึกเซ็ตข้อมูลก่อนกดดาวน์โหลด"); }
-            let csv = "Set,Duration_Seconds,Pitch_ROM,Roll_ROM\n";
-            recordsList.forEach(r => { csv += `${r.set},${r.duration},${r.pitchRom},${r.rollRom}\n`; });
+            
+            // เพิ่มหัวข้อคอลัมน์ของไฟล์ CSV ให้มี Timestamp และค่าดิบจากเซนเซอร์ด้วยเพื่อทำ Data Science / Analytics ต่อได้ง่าย
+            let csv = "Set,Duration_Seconds,Pitch_ROM,Roll_ROM,Last_Accel_Pitch,Last_Accel_Roll,Last_Gyro_Pitch,Last_Gyro_Roll,Export_Timestamp\n";
+            let isoTimestamp = new Date().toISOString();
+
+            recordsList.forEach(r => { 
+                csv += `${r.set},${r.duration},${r.pitchRom},${r.rollRom},${filteredPitch.toFixed(2)},${filteredRoll.toFixed(2)},${lastPitch.toFixed(2)},${lastRoll.toFixed(2)},${isoTimestamp}\n`; 
+            });
+            
             let blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
             let link = document.createElement("a"); 
             link.href = URL.createObjectURL(blob); 
-            link.download = "clinical_motion_report.csv"; 
+            link.download = `clinical_motion_report_${Date.now()}.csv`; 
             link.click();
         };
 
@@ -514,7 +527,7 @@
             let currentPitch = filteredPitch;
             let currentRoll = filteredRoll;
 
-            // 🛑 เงื่อนไขเพิ่มเติม: ถ้าไม่ได้อยู่ในสถานะทดสอบ (isRecording == false) ให้หยุดการทำงานทั้งหมดด้านล่างทันที
+            // 🛑 หากหยุดการทดสอบ (isRecording == false) จะหยุดอัปเดตค่าและค้างหน้าจอไว้
             if (!isRecording) return;
 
             // อัปเดตกราฟเส้นสด Chart.js (เฉพาะตอนทดสอบ)
@@ -532,7 +545,7 @@
                 );
             }
 
-            // แสดงค่าผลลัพธ์องศาเรียลไทม์ (หยุดอัปเดตเมื่อกดหยุดการทดสอบ)
+            // แสดงค่าผลลัพธ์องศาเรียลไทม์
             document.getElementById("lblElevation").textContent = currentPitch.toFixed(1) + "°";
             
             let tiltDirection = currentRoll >= 0 ? "ขวา " : "ซ้าย ";
