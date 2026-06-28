@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Antigravity Clinical Motion Twin - Light Mega Model</title>
+    <title>Antigravity Clinical Motion Twin - Premium Dashboard</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -12,13 +12,13 @@
     <style>
         * {
             box-sizing: border-box;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
         }
         body {
-            background-color: #f4f6f9;
+            background-color: #f1f5f9;
             color: #334155;
             margin: 0;
-            padding: 16px;
+            padding: 20px;
             height: 100vh;
             overflow: hidden;
         }
@@ -26,134 +26,155 @@
             display: flex;
             flex-direction: column;
             height: 100%;
-            max-width: 1650px;
+            max-width: 1600px;
             margin: 0 auto;
-            gap: 12px;
+            gap: 16px;
         }
+        
+        /* Premium Header */
         .header-panel {
             background: #ffffff;
-            padding: 0 24px;
-            border-radius: 12px;
+            padding: 0 28px;
+            border-radius: 14px;
             border: 1px solid #e2e8f0;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            height: 65px;
+            height: 70px;
             flex-shrink: 0;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02), 0 2px 4px -1px rgba(0,0,0,0.01);
         }
         .main-title {
             margin: 0;
-            font-size: 22px;
+            font-size: 20px;
             color: #0f172a;
             font-weight: 700;
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 12px;
         }
+        
+        /* Grid Layout Dynamic Split */
         .grid-layout {
             display: grid;
-            grid-template-columns: 2.6fr 1.4fr;
-            gap: 14px;
+            grid-template-columns: 1.65fr 1fr;
+            gap: 16px;
             flex-grow: 1;
             min-height: 0;
         }
         .main-left-column, .sidebar-right-column {
             display: flex;
             flex-direction: column;
-            gap: 14px;
+            gap: 16px;
             min-height: 0;
         }
+        
+        /* Elegant Cards design */
         .card-panel {
             background: #ffffff;
             border: 1px solid #e2e8f0;
-            border-radius: 12px;
-            padding: 16px;
+            border-radius: 14px;
+            padding: 20px;
             display: flex;
             flex-direction: column;
             min-height: 0;
-            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+            box-shadow: 0 10px 15px -3px rgba(15, 23, 42, 0.04);
+            position: relative;
         }
+        .panel-heading {
+            margin: 0 0 14px 0;
+            font-size: 14px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #475569;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        /* Model Canvas Adjustments */
         .model-core-panel {
             flex-grow: 1;
-            position: relative;
+            min-height: 400px;
         }
         .canvas-container {
             position: relative;
             width: 100%;
             flex-grow: 1;
-            border-radius: 10px;
-            border: 1px solid #cbd5e1;
+            border-radius: 12px;
+            border: 1px solid #e2e8f0;
             overflow: hidden;
-            background-color: #f8fafc;
+            background: radial-gradient(circle at center, #ffffff 0%, #f8fafc 100%);
             min-height: 0;
         }
         #canvas3d {
             width: 100%;
             height: 100%;
         }
-        .gauge-bar-wrapper {
-            background: #e2e8f0;
-            height: 8px;
-            border-radius: 4px;
-            margin: 8px 0 14px 0;
-            overflow: hidden;
-            position: relative;
-        }
-        .gauge-bar-fill {
-            background: #0284c7;
-            height: 100%;
-            width: 50%;
-            transition: width 0.1s ease;
-        }
-        .metrics-grid-3 {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 10px;
-            margin-top: 10px;
-        }
-        .metric-box {
-            background: #f8fafc;
-            padding: 12px;
-            border-radius: 8px;
-            border: 1px solid #e2e8f0;
-            text-align: center;
-        }
+        
+        /* Clean Metrics Typography */
         .single-metric-display {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            background: #f0f9ff;
-            border: 1px solid #bae6fd;
-            border-radius: 10px;
-            padding: 12px 20px;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 14px 20px;
+            margin-bottom: 12px;
         }
         .metric-value-large {
-            font-size: 36px;
+            font-size: 38px;
             font-weight: 800;
-            color: #0369a1;
+            color: #0284c7;
+            font-variant-numeric: tabular-nums;
+            line-height: 1;
+            margin-top: 4px;
         }
+        
+        /* Top Badge within Model Box */
         .status-badge {
             position: absolute;
-            top: 12px;
-            left: 12px;
+            top: 14px;
+            left: 14px;
             padding: 6px 14px;
-            border-radius: 20px;
-            font-weight: 600;
-            font-size: 12px;
+            border-radius: 30px;
+            font-weight: 700;
+            font-size: 11px;
             z-index: 10;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+            letter-spacing: 0.3px;
         }
+        
+        /* Flat Minimal Gauge */
+        .gauge-bar-wrapper {
+            background: #e2e8f0;
+            height: 6px;
+            border-radius: 10px;
+            margin: 4px 0 16px 0;
+            overflow: hidden;
+        }
+        .gauge-bar-fill {
+            background: linear-gradient(90deg, #38bdf8, #0284c7);
+            height: 100%;
+            width: 50%;
+            transition: width 0.1s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        /* Realtime Extended Chart */
         .chart-container {
             position: relative;
-            height: 150px;
+            height: 125px;
             width: 100%;
             min-height: 0;
         }
+        
+        /* Action UI Buttons Control */
         .btn-panel-group {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 8px;
+            gap: 10px;
             margin-top: 10px;
         }
         .action-btn {
@@ -161,156 +182,186 @@
             color: #ffffff;
             border: none;
             padding: 12px;
-            border-radius: 8px;
+            border-radius: 10px;
             font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s;
             font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 6px;
+            gap: 8px;
+            box-shadow: 0 2px 4px rgba(2, 132, 199, 0.15);
         }
         .action-btn:hover {
             background: #0369a1;
             transform: translateY(-1px);
+            box-shadow: 0 4px 6px rgba(2, 132, 199, 0.25);
         }
         .action-btn.secondary {
-            background: #f1f5f9;
+            background: #ffffff;
             color: #475569;
             border: 1px solid #cbd5e1;
+            box-shadow: none;
         }
         .action-btn.secondary:hover {
-            background: #e2e8f0;
+            background: #f8fafc;
+            border-color: #94a3b8;
         }
         .action-btn.danger {
             background: #ef4444;
+            box-shadow: 0 2px 4px rgba(239, 68, 68, 0.15);
         }
         .action-btn.danger:hover {
             background: #dc2626;
+            box-shadow: 0 4px 6px rgba(239, 68, 68, 0.25);
         }
-        .axis-legend {
-            display: flex;
-            justify-content: center;
-            gap: 20px;
-            font-size: 12px;
-            margin-bottom: 10px;
+        
+        /* Diagnostics Block Metrics */
+        .metrics-grid-3 {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
         }
-        .legend-item {
-            display: flex;
-            align-items: center;
-            gap: 6px;
+        .metric-box {
+            background: #f8fafc;
+            padding: 14px;
+            border-radius: 10px;
+            border: 1px solid #e2e8f0;
+            text-align: center;
         }
-        .color-dot {
-            width: 12px;
-            height: 12px;
-            border-radius: 4px;
+        .metric-box-val {
+            font-size: 18px;
+            font-weight: 700;
+            color: #1e293b;
+            margin-top: 4px;
         }
-        .rom-bar-container {
+        
+        /* Validation Grid Capsular Design */
+        .validation-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+        .val-card {
             background: #f8fafc;
             border: 1px solid #e2e8f0;
-            border-radius: 8px;
-            padding: 10px;
-            margin-top: 10px;
-        }
-        .rom-bar-label {
-            font-size: 12px;
-            color: #64748b;
+            border-radius: 10px;
+            padding: 12px 14px;
             display: flex;
-            justify-content: space-between;
-            margin-bottom: 4px;
+            flex-direction: column;
+            justify-content: center;
         }
-        .rom-progress-bg {
-            background: #e2e8f0;
-            height: 8px;
-            border-radius: 4px;
-            overflow: hidden;
+        .val-title {
+            font-size: 11px;
+            color: #64748b;
+            font-weight: 600;
+            margin-bottom: 2px;
         }
-        .rom-progress-fill {
-            background: linear-gradient(90deg, #0ea5e9, #4f46e5);
-            height: 100%;
-            width: 0%;
-            transition: width 0.2s ease;
+        .val-data {
+            font-size: 15px;
+            font-weight: 700;
+            color: #0f172a;
         }
+        
+        /* Smooth Modern Table */
         .table-wrapper {
             flex-grow: 1;
             overflow-y: auto;
             border: 1px solid #e2e8f0;
-            border-radius: 8px;
-            margin-top: 8px;
+            border-radius: 10px;
+            margin-top: 10px;
             min-height: 0;
         }
         table {
             width: 100%;
             border-collapse: collapse;
             font-size: 12px;
-            text-align: left;
         }
         th {
             background: #f8fafc;
-            color: #64748b;
-            padding: 10px;
-            font-weight: 600;
+            color: #475569;
+            padding: 12px;
+            font-weight: 700;
             border-bottom: 1px solid #e2e8f0;
             position: sticky;
             top: 0;
+            text-align: left;
         }
         td {
-            padding: 10px;
+            padding: 12px;
             border-bottom: 1px solid #f1f5f9;
             color: #475569;
         }
         tr:last-child td {
             border-bottom: none;
         }
+        
+        .axis-legend {
+            display: flex;
+            justify-content: center;
+            gap: 24px;
+            font-size: 12px;
+            margin-bottom: 12px;
+            font-weight: 500;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .color-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+        }
+        
+        /* Modal Backdrop */
         .modal {
             display: none;
             position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(15, 23, 42, 0.3);
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(15, 23, 42, 0.4);
+            backdrop-filter: blur(4px);
             align-items: center;
             justify-content: center;
-            z-index: 99;
+            z-index: 999;
         }
         .modal-content {
             background: #ffffff;
-            padding: 30px;
-            border-radius: 16px;
+            padding: 32px;
+            border-radius: 20px;
             text-align: center;
             border: 1px solid #e2e8f0;
-            box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1);
+            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.15);
+            max-width: 360px;
+            width: 90%;
         }
     </style>
 </head>
 <body>
 
 <div class="app-container">
-    <!-- 1. Header Panel -->
     <div class="header-panel">
-        <h1 class="main-title">🌌 Antigravity Motion Twin <span style="font-weight: 300; color:#94a3b8;">|</span> <span style="font-size:14px; color:#64748b; font-weight:500;">Clinical Dashboard</span></h1>
-        <div style="display: flex; gap: 10px;">
-            <button id="btnResetROM" class="action-btn secondary" style="padding: 8px 16px;">🔄 รีเซ็ตค่า ROM</button>
-            <button id="btnOpenQR" class="action-btn" style="padding: 8px 16px; background:#0f172a;">📱 เชื่อมต่อมือถือ</button>
+        <h1 class="main-title">🌌 Antigravity Motion Twin <span style="font-weight: 300; color:#cbd5e1;">|</span> <span style="font-size:13px; color:#64748b; font-weight:600; background:#f1f5f9; padding:4px 10px; border-radius:6px;">CLINICAL LAB v2.4</span></h1>
+        <div style="display: flex; gap: 12px;">
+            <button id="btnResetROM" class="action-btn secondary" style="padding: 0 18px; height: 42px;">🔄 รีเซ็ตช่วงองศา</button>
+            <button id="btnOpenQR" class="action-btn" style="padding: 0 18px; height: 42px; background:#0f172a; box-shadow:none;">📱 ซิงค์อุปกรณ์ส่งสัญญาณ</button>
         </div>
     </div>
 
-    <!-- 2. Main Layout Dashboard -->
     <div class="grid-layout">
         
-        <!-- ฝั่งซ้าย: พื้นที่แสดงผลลัพธ์และโมเดล 3D (ขยายขนาดโมเดลแล้ว) -->
         <div class="main-left-column">
             <div class="card-panel model-core-panel">
                 <div class="single-metric-display">
                     <div>
-                        <div style="font-size: 12px; color: #0284c7; font-weight: 600; letter-spacing: 0.5px;">🏋️‍♂️ องศาการยกตัวปัจจุบัน (Elevation Angle)</div>
+                        <div style="font-size: 11px; color: #0284c7; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase;">🏋️‍♂️ องศาการยกตัวปัจจุบัน (Elevation Angle)</div>
                         <div id="lblElevation" class="metric-value-large">0.0°</div>
                     </div>
                     <div style="text-align: right;">
-                        <span style="font-size: 11px; color: #64748b;">สถานะแกน Y</span>
-                        <div style="font-size:14px; font-weight:600; color:#0369a1; margin-top:4px;">Live Dynamic Tracking</div>
+                        <span style="font-size: 11px; color: #64748b; font-weight:500;">แกนส่งผลหลัก</span>
+                        <div style="font-size:13px; font-weight:700; color:#0284c7; margin-top:4px; background:#e0f2fe; padding:2px 8px; border-radius:6px;">Dynamic Roll-Y</div>
                     </div>
                 </div>
 
@@ -325,70 +376,86 @@
                 </div>
 
                 <div class="canvas-container" id="canvasWrapper">
-                    <div id="statusBadge" class="status-badge">⏳ รอกำหนดระนาบอุปกรณ์...</div>
+                    <div id="statusBadge" class="status-badge">⏳ รอกระตุ้นระนาบเซนเซอร์...</div>
                     <div id="canvas3d"></div>
                 </div>
             </div>
 
-            <!-- กราฟเส้นแบบพรีเมียม -->
-            <div class="card-panel" style="padding: 12px;">
+            <div class="card-panel" style="padding: 12px 16px;">
                 <div class="chart-container">
                     <canvas id="realtimeChart"></canvas>
                 </div>
             </div>
         </div>
 
-        <!-- ฝั่งขวา: Diagnostics & Smart History Log -->
         <div class="sidebar-right-column">
             
-            <!-- ส่วนการประเมินความเสถียร -->
             <div class="card-panel" style="border-top: 4px solid #0ea5e9;">
-                <h4 style="margin: 0 0 10px 0; color: #0f172a; font-size: 15px;">🔍 Stability Diagnostics</h4>
+                <div class="panel-heading">🔍 Stability Diagnostics</div>
                 <div class="metrics-grid-3">
                     <div class="metric-box">
-                        <div style="font-size: 11px; color: #64748b; margin-bottom:4px;">Jitter</div>
-                        <div id="lblJitter" style="font-size: 16px; font-weight: 700; color: #1e293b;">0.00°</div>
+                        <div style="font-size: 11px; color: #64748b; font-weight:600;">Jitter</div>
+                        <div id="lblJitter" class="metric-box-val">0.00°</div>
                     </div>
                     <div class="metric-box">
-                        <div style="font-size: 11px; color: #64748b; margin-bottom:4px;">Grading</div>
-                        <div id="lblGrade" style="font-size: 12px; font-weight: 700; color: #ef4444;">❌ Unstable</div>
+                        <div style="font-size: 11px; color: #64748b; font-weight:600;">Grading</div>
+                        <div id="lblGrade" style="font-size: 13px; font-weight: 700; color: #ef4444; margin-top:8px;">❌ Tilted</div>
                     </div>
                     <div class="metric-box">
-                        <div style="font-size: 11px; color: #64748b; margin-bottom:4px;">เวลาที่นิ่ง</div>
-                        <div id="lblStableTime" style="font-size: 16px; font-weight: 700; color: #10b981;">0.0s</div>
+                        <div style="font-size: 11px; color: #64748b; font-weight:600;">เวลาที่นิ่ง</div>
+                        <div id="lblStableTime" class="metric-box-val" style="color: #10b981;">0.0s</div>
                     </div>
                 </div>
 
                 <div class="rom-bar-container">
                     <div class="rom-bar-label">
-                        <span>Flatness Verification Progress</span>
-                        <span id="lblStablePercent" style="font-weight:600; color: #0284c7;">0%</span>
+                        <span style="font-weight:600;">Flatness Verification Progress</span>
+                        <span id="lblStablePercent" style="font-weight:700; color: #0284c7;">0%</span>
                     </div>
                     <div class="rom-progress-bg"><div id="barStableProgress" class="rom-progress-fill"></div></div>
                 </div>
             </div>
 
-            <!-- การคำนวณช่วงพิสัยรวม ROM -->
-            <div class="card-panel" style="border-top: 4px solid #6366f1;">
-                <h4 style="margin: 0 0 10px 0; color: #0f172a; font-size: 15px;">📊 Range of Motion (ROM) รวมประจำเซ็ต</h4>
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; text-align: center;">
-                    <div style="background: #f8fafc; padding: 10px; border-radius: 8px; border: 1px solid #e2e8f0;">
-                        <span style="font-size: 11px; color:#64748b;">Pitch Total ROM</span>
-                        <div id="lblPitchROM" style="font-size: 18px; font-weight: 700; color:#4f46e5; margin-top:2px;">0.0°</div>
+            <div class="card-panel" style="border-top: 4px solid #10b981;">
+                <div class="panel-heading">📡 Data Sync & Validation Monitor</div>
+                <div class="validation-grid">
+                    <div class="val-card">
+                        <span class="val-title">ความถี่ส่งพิกัด</span>
+                        <div id="valFrequency" class="val-data" style="color: #0284c7;">0.0 Hz</div>
                     </div>
-                    <div style="background: #f8fafc; padding: 10px; border-radius: 8px; border: 1px solid #e2e8f0;">
-                        <span style="font-size: 11px; color:#64748b;">Roll Total ROM</span>
-                        <div id="lblRollROM" style="font-size: 18px; font-weight: 700; color:#0ea5e9; margin-top:2px;">0.0°</div>
+                    <div class="val-card">
+                        <span class="val-title">คุณภาพสัญญาณเชื่อมต่อ</span>
+                        <div id="valQuality" class="val-data" style="color: #64748b;">Standby</div>
+                    </div>
+                    <div class="val-card">
+                        <span class="val-title">จำนวนแพ็กเกจรวม</span>
+                        <div id="valTotalCount" class="val-data">0 Packets</div>
+                    </div>
+                    <div class="val-card">
+                        <span class="val-title">ดีเลย์เครือข่าย (dt)</span>
+                        <div id="valLatency" class="val-data">0ms</div>
                     </div>
                 </div>
             </div>
 
-            <!-- ตารางสรุป Log และปุ่มควบคุมการจัดการไฟล์ -->
+            <div class="card-panel" style="border-top: 4px solid #6366f1;">
+                <div class="panel-heading">📊 Range of Motion (ROM) ประจำเซ็ต</div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; text-align: center;">
+                    <div style="background: #f8fafc; padding: 12px; border-radius: 10px; border: 1px solid #e2e8f0;">
+                        <span style="font-size: 11px; color:#64748b; font-weight:500;">Pitch Total ROM</span>
+                        <div id="lblPitchROM" style="font-size: 20px; font-weight: 800; color:#4f46e5; margin-top:4px;">0.0°</div>
+                    </div>
+                    <div style="background: #f8fafc; padding: 12px; border-radius: 10px; border: 1px solid #e2e8f0;">
+                        <span style="font-size: 11px; color:#64748b; font-weight:500;">Roll Total ROM</span>
+                        <div id="lblRollROM" style="font-size: 20px; font-weight: 800; color:#0ea5e9; margin-top:4px;">0.0°</div>
+                    </div>
+                </div>
+            </div>
+
             <div class="card-panel" style="flex-grow: 1;">
-                <h4 style="margin: 0 0 4px 0; font-size: 14px; color: #1e293b;">⏱️ เซสชันชุดทดสอบ</h4>
-                <div style="display: flex; justify-content: space-between; font-size: 12px; background: #f8fafc; padding: 8px 12px; border-radius: 6px; border: 1px solid #e2e8f0;">
-                    <div>เซ็ตปัจจุบัน: <span id="lblSet" style="font-weight: 700; color: #4f46e5;">1</span></div>
-                    <div>เวลาบันทึก: <span id="lblTimer" style="font-weight: 700; color:#10b981;">0 วินาที</span></div>
+                <div style="display: flex; justify-content: space-between; align-items:center; background: #f8fafc; padding: 10px 16px; border-radius: 10px; border: 1px solid #e2e8f0; margin-bottom:12px;">
+                    <div style="font-size:13px; font-weight:500;">เซ็ตปัจจุบัน: <span id="lblSet" style="font-weight: 700; color: #4f46e5;">1</span></div>
+                    <div style="font-size:13px; font-weight:500;">เวลาเซสชัน: <span id="lblTimer" style="font-weight: 700; color:#10b981;">0 วินาที</span></div>
                 </div>
                 
                 <div class="btn-panel-group">
@@ -398,12 +465,11 @@
                     <button id="btnResetSession" class="action-btn danger">ล้างประวัติเซ็ต</button>
                 </div>
                 
-                <h5 style="margin: 14px 0 6px 0; font-size: 12px; color: #64748b; font-weight:600;">HISTORY ANALYTICS LOG:</h5>
                 <div class="table-wrapper">
                     <table>
                         <thead>
                             <tr>
-                                <th>เซ็ตที่</th>
+                                <th>ชุดตรวจ</th>
                                 <th>เวลา (วิ)</th>
                                 <th>Pitch ROM</th>
                                 <th>Roll ROM</th>
@@ -411,7 +477,7 @@
                         </thead>
                         <tbody id="logTableBody">
                             <tr>
-                                <td colspan="4" style="text-align: center; color: #94a3b8; padding: 20px;">ยังไม่มีข้อมูลบันทึกในเซสชันนี้</td>
+                                <td colspan="4" style="text-align: center; color: #94a3b8; padding: 24px;">ยังไม่มีข้อมูลประวัติในเซสชันนี้</td>
                             </tr>
                         </tbody>
                     </table>
@@ -424,9 +490,10 @@
 
 <div id="qrModal" class="modal">
     <div class="modal-content">
-        <h3 style="margin-top: 0; color: #0f172a; font-size:18px;">📱 สแกน QR Code เพื่อต่อตัวส่งสัญญาณมือถือ</h3>
-        <div id="qrcode" style="display: flex; justify-content: center; margin: 20px 0; padding: 8px; background:white; border-radius:8px;"></div>
-        <button id="btnCloseQR" class="action-btn secondary" style="width: 120px; margin: 0 auto;">ปิดหน้าต่าง</button>
+        <h3 style="margin-top: 0; color: #0f172a; font-size:17px; font-weight:700;">📱 เชื่อมโยงสัญญาณโมบายพิกัด</h3>
+        <p style="font-size:12px; color:#64748b; margin-bottom:16px;">สแกนคิวอาร์โค้ดนี้ด้วยโทรศัพท์มือถือของคุณเพื่อเปลี่ยนเป็นตัวส่งพิกัดการยก</p>
+        <div id="qrcode" style="display: flex; justify-content: center; margin: 20px 0; padding: 12px; background:white; border: 1px solid #e2e8f0; border-radius:12px;"></div>
+        <button id="btnCloseQR" class="action-btn secondary" style="width: 100%; height:42px;">ปิดหน้าต่าง</button>
     </div>
 </div>
 
@@ -455,6 +522,10 @@
         let isFirstRun = true;
         const ALPHA = 0.96;
 
+        let totalPayloadCount = 0;
+        let packetInLastSecond = 0;
+        let hzInterval = null;
+
         const btnStart = document.getElementById("btnStart");
         const btnSave = document.getElementById("btnSave");
         const btnExport = document.getElementById("btnExport");
@@ -470,6 +541,11 @@
         const statusBadge = document.getElementById("statusBadge");
         const gaugeBar = document.getElementById("gaugeBar");
 
+        const valTotalCount = document.getElementById("valTotalCount");
+        const valFrequency = document.getElementById("valFrequency");
+        const valQuality = document.getElementById("valQuality");
+        const valLatency = document.getElementById("valLatency");
+
         db.ref("system/currentSetNum").on("value", (snapshot) => {
             if (snapshot.exists()) { currentSetNum = snapshot.val(); }
             lblSet.textContent = currentSetNum;
@@ -479,10 +555,10 @@
         const realtimeChart = new Chart(ctx, {
             type: 'line',
             data: {
-                labels: Array(20).fill(''),
+                labels: Array(25).fill(''),
                 datasets: [
-                    { label: 'Pitch', borderColor: '#ef4444', data: Array(20).fill(0), fill: false, tension: 0.1, borderWidth: 2, pointRadius: 0 },
-                    { label: 'Roll', borderColor: '#0ea5e9', data: Array(20).fill(0), fill: false, tension: 0.1, borderWidth: 2, pointRadius: 0 }
+                    { label: 'Pitch', borderColor: '#ef4444', data: Array(25).fill(0), fill: false, tension: 0.1, borderWidth: 2.5, pointRadius: 0 },
+                    { label: 'Roll', borderColor: '#0ea5e9', data: Array(25).fill(0), fill: false, tension: 0.1, borderWidth: 2.5, pointRadius: 0 }
                 ]
             },
             options: {
@@ -490,10 +566,24 @@
                 plugins: { legend: { display: false } },
                 scales: {
                     x: { display: false },
-                    y: { min: -90, max: 90, grid: { color: '#f1f5f9' }, ticks: { color: '#94a3b8' } }
+                    y: { min: -90, max: 90, grid: { color: '#f1f5f9' }, ticks: { color: '#94a3b8', font: { size: 10 } } }
                 }
             }
         });
+
+        hzInterval = setInterval(() => {
+            valFrequency.textContent = packetInLastSecond.toFixed(1) + " Hz";
+            if (packetInLastSecond === 0) {
+                valQuality.textContent = "Offline"; valQuality.style.color = "#ef4444";
+            } else if (packetInLastSecond >= 25) {
+                valQuality.textContent = "💎 Excellent"; valQuality.style.color = "#10b981";
+            } else if (packetInLastSecond >= 10) {
+                valQuality.textContent = "✅ Connected"; valQuality.style.color = "#0284c7";
+            } else {
+                valQuality.textContent = "⚠️ Unstable"; valQuality.style.color = "#f59e0b";
+            }
+            packetInLastSecond = 0;
+        }, 1000);
 
         function resetROM() {
             firstPayloadReceived = false;
@@ -518,8 +608,9 @@
             
             if (isRecording) {
                 btnStart.textContent = "⏸ หยุดค้างค่า";
-                btnStart.style.background = "#e2e8f0";
-                btnStart.style.color = "#334155";
+                btnStart.style.background = "#cbd5e1";
+                btnStart.style.color = "#1e293b";
+                btnStart.style.boxShadow = "none";
                 clockInterval = setInterval(() => { 
                     timerCount++; 
                     lblTimer.textContent = timerCount + " วินาที"; 
@@ -536,7 +627,7 @@
             document.getElementById("qrcode").innerHTML = "";
             let currentURL = window.location.href;
             let targetURL = currentURL.substring(0, currentURL.lastIndexOf("/")) + "/phone.html";
-            new QRCode(document.getElementById("qrcode"), { text: targetURL, width: 150, height: 150 });
+            new QRCode(document.getElementById("qrcode"), { text: targetURL, width: 140, height: 140 });
         };
         btnCloseQR.onclick = () => { document.getElementById("qrModal").style.display = "none"; };
 
@@ -549,10 +640,10 @@
             let logHTML = "";
             recordsList.forEach((r) => {
                 logHTML += `<tr>
-                    <td><b>ชุดที่ ${r.set}</b></td>
+                    <td><b>ชุดเซ็ต ${r.set}</b></td>
                     <td>${r.duration} วิ</td>
-                    <td style="color:#4f46e5; font-weight:600;">${r.pitchRom}°</td>
-                    <td style="color:#0ea5e9; font-weight:600;">${r.rollRom}°</td>
+                    <td style="color:#4f46e5; font-weight:700;">${r.pitchRom}°</td>
+                    <td style="color:#0ea5e9; font-weight:700;">${r.rollRom}°</td>
                 </tr>`;
             });
             logTableBody.innerHTML = logHTML;
@@ -566,24 +657,22 @@
         };
 
         btnExport.onclick = () => {
-            if(!recordsList.length) { return alert("ไม่มีข้อมูลสำหรับการส่งออกไฟล์ในขณะนี้ครับ"); }
-            let csv = "Set,Duration_Seconds,Pitch_ROM,Roll_ROM,Last_Accel_Pitch,Last_Accel_Roll,Last_Gyro_Pitch,Last_Gyro_Roll,Export_Timestamp\n";
-            let isoTimestamp = new Date().toISOString();
-            recordsList.forEach(r => { 
-                csv += `${r.set},${r.duration},${r.pitchRom},${r.rollRom},${filteredPitch.toFixed(2)},${filteredRoll.toFixed(2)},${lastPitch.toFixed(2)},${lastRoll.toFixed(2)},${isoTimestamp}\n`; 
-            });
+            if(!recordsList.length) { return alert("ไม่พบฐานข้อมูลประวัติสำหรับการดึงออกมาเป็นไฟล์ในขณะนี้ครับ"); }
+            let csv = "Set,Duration_Seconds,Pitch_ROM,Roll_ROM,Validation_Packets\n";
+            recordsList.forEach(r => { csv += `${r.set},${r.duration},${r.pitchRom},${r.rollRom},${totalPayloadCount}\n`; });
             let blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
             let link = document.createElement("a"); 
             link.href = URL.createObjectURL(blob); 
-            link.download = `clinical_motion_twin_${Date.now()}.csv`; 
+            link.download = `clinical_validation_export_${Date.now()}.csv`; 
             link.click();
         };
 
         btnResetSession.onclick = () => {
-            if (confirm("คุณต้องการล้างประวัติชุดทดสอบระบบทั้งหมดใช่หรือไม่?")) {
-                recordsList = []; 
-                logTableBody.innerHTML = `<tr><td colspan="4" style="text-align: center; color: #94a3b8; padding: 20px;">ยังไม่มีข้อมูลบันทึกในเซสชันนี้</td></tr>`;
+            if (confirm("ต้องการรีเซ็ตและเคลียร์ประวัติล้างข้อมูลชุดเซ็ตทั้งหมดทิ้งใช่หรือไม่?")) {
+                recordsList = []; totalPayloadCount = 0; packetInLastSecond = 0;
+                logTableBody.innerHTML = `<tr><td colspan="4" style="text-align: center; color: #94a3b8; padding: 24px;">ยังไม่มีข้อมูลประวัติในเซสชันนี้</td></tr>`;
                 timerCount = 0; lblTimer.textContent = "0 วินาที"; stableTicks = 0;
+                valTotalCount.textContent = "0 Packets"; valLatency.textContent = "0ms";
                 db.ref("system/isRecording").set(false); 
                 db.ref("system/currentSetNum").set(1);
                 db.ref("system/resetSignal").set(true).then(() => { db.ref("system/resetSignal").set(false); });
@@ -596,8 +685,13 @@
             const data = snapshot.val();
             if (!data) return;
 
+            totalPayloadCount++;
+            packetInLastSecond++;
+            valTotalCount.textContent = totalPayloadCount + " Packets";
+
             let currentTime = Date.now();
             let dt = (currentTime - lastTimestamp) / 1000.0;
+            valLatency.textContent = Math.round(dt * 1000) + "ms";
             lastTimestamp = currentTime;
             if (dt <= 0 || dt > 0.5) dt = 0.01; 
 
@@ -639,19 +733,19 @@
             let isPerfectFlat = Math.abs(currentPitch) <= 1.0 && Math.abs(currentRoll) <= 1.0;
             if (isPerfectFlat) {
                 canvasWrapper.style.borderColor = "#10b981";
-                statusBadge.textContent = "🟩 STABLE (ระนาบสมบูรณ์)";
-                statusBadge.style.background = "#d1fae5"; statusBadge.style.color = "#065f46";
+                statusBadge.textContent = "🟩 STABLE (องศาระนาบสมบูรณ์)";
+                statusBadge.style.background = "#ecfdf5"; statusBadge.style.color = "#047857";
                 stableTicks++;
                 if (jitterIndex < 0.15) {
                     document.getElementById("lblGrade").textContent = "💎 Excellent"; document.getElementById("lblGrade").style.color = "#047857";
                 } else {
-                    document.getElementById("lblGrade").textContent = "✅ Acceptable"; document.getElementById("lblGrade").style.color = "#b45309";
+                    document.getElementById("lblGrade").textContent = "✅ Optimal"; document.getElementById("lblGrade").style.color = "#0284c7";
                 }
             } else {
-                canvasWrapper.style.borderColor = "#ef4444";
-                statusBadge.textContent = "🚨 TILTED (เครื่องเอียงจากแกน)";
-                statusBadge.style.background = "#fee2e2"; statusBadge.style.color = "#991b1b";
-                document.getElementById("lblGrade").textContent = "❌ Unstable"; document.getElementById("lblGrade").style.color = "#ef4444";
+                canvasWrapper.style.borderColor = "#f87171";
+                statusBadge.textContent = "🚨 TILTED (ระนาบเคลื่อนที่)";
+                statusBadge.style.background = "#fef2f2"; statusBadge.style.color = "#b91c1c";
+                document.getElementById("lblGrade").textContent = "❌ Tilted"; document.getElementById("lblGrade").style.color = "#ef4444";
                 stableTicks = Math.max(0, stableTicks - 2); 
             }
 
@@ -673,33 +767,31 @@
             document.getElementById("lblRollROM").textContent = Math.abs(maxRoll - minRoll).toFixed(1) + "°";
         });
 
-        // 📐 THREE.js 3D Engine Setup - ขยายโมเดลขึ้นเกือบ 2 เท่าตามต้องการ
+        // 📐 THREE.js Setup - มิติสัดส่วนพิกัดตัวโมเดลโทรศัพท์แบบมินิมอลสมส่วน
         let scene, camera, renderer, phoneGroup;
         const container3d = document.getElementById("canvas3d");
         
         if(container3d) {
-            scene = new THREE.Scene(); scene.background = new THREE.Color(0xf8fafc);
+            scene = new THREE.Scene();
             
-            // ปรับตำแหน่งกล้องให้ขยับเข้ามาใกล้ขึ้นอีกนิดเพื่อให้เห็นโมเดลใหญ่เต็มกรอบ
-            camera = new THREE.PerspectiveCamera(40, container3d.clientWidth / container3d.clientHeight, 0.1, 100);
-            camera.position.set(1.9, 1.8, 1.9); 
+            camera = new THREE.PerspectiveCamera(38, container3d.clientWidth / container3d.clientHeight, 0.1, 100);
+            camera.position.set(2.4, 2.1, 2.4); 
             camera.lookAt(0, 0, 0);
 
-            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
             renderer.setSize(container3d.clientWidth, container3d.clientHeight);
             container3d.appendChild(renderer.domElement);
 
-            scene.add(new THREE.AmbientLight(0xffffff, 0.7));
-            let mainLight = new THREE.DirectionalLight(0x0ea5e9, 0.5); mainLight.position.set(4, 8, 4); scene.add(mainLight);
+            scene.add(new THREE.AmbientLight(0xffffff, 0.8));
+            let mainLight = new THREE.DirectionalLight(0x0ea5e9, 0.4); mainLight.position.set(4, 8, 4); scene.add(mainLight);
 
-            let polarGrid = new THREE.PolarGridHelper(1.8, 16, 8, 64, 0xcbd5e1, 0xe2e8f0);
-            polarGrid.position.y = -0.1;
+            let polarGrid = new THREE.PolarGridHelper(1.8, 16, 8, 64, 0xe2e8f0, 0xf1f5f9);
+            polarGrid.position.y = -0.15;
             scene.add(polarGrid);
 
             phoneGroup = new THREE.Group();
             
-            // 🚀 ขยายมิติของตัวเครื่องโทรศัพท์ 3D (เพิ่มขนาดเกือบ 2 เท่าจากเดิม)
-            const width = 1.9, height = 3.6, depth = 0.2, radius = 0.22;
+            const width = 1.25, height = 2.45, depth = 0.12, radius = 0.15;
             let shape = new THREE.Shape();
             shape.moveTo(-width/2 + radius, height/2); shape.lineTo(width/2 - radius, height/2);
             shape.quadraticCurveTo(width/2, height/2, width/2, height/2 - radius); shape.lineTo(width/2, -height/2 + radius);
@@ -707,20 +799,19 @@
             shape.quadraticCurveTo(-width/2, -height/2, -width/2, -height/2 + radius); shape.lineTo(-width/2, height/2 - radius);
             shape.quadraticCurveTo(-width/2, height/2, -width/2 + radius, height/2);
 
-            let extrudeSettings = { depth: depth, bevelEnabled: true, bevelSegments: 3, steps: 1, bevelSize: 0.02, bevelThickness: 0.02 };
+            let extrudeSettings = { depth: depth, bevelEnabled: true, bevelSegments: 4, steps: 1, bevelSize: 0.02, bevelThickness: 0.02 };
             let bodyGeo = new THREE.ExtrudeGeometry(shape, extrudeSettings); bodyGeo.center(); 
-            let bodyMat = new THREE.MeshStandardMaterial({ color: 0x475569, roughness: 0.3, metalness: 0.4 }); 
+            let bodyMat = new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.25, metalness: 0.5 }); 
             let phoneBody = new THREE.Mesh(bodyGeo, bodyMat); phoneBody.rotation.x = -Math.PI / 2; phoneGroup.add(phoneBody);
 
-            let screenGeo = new THREE.BoxGeometry(width - 0.12, 0.01, height - 0.12);
-            let screenMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.1, metalness: 0.7 });
+            let screenGeo = new THREE.BoxGeometry(width - 0.08, 0.01, height - 0.08);
+            let screenMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.1, metalness: 0.8 });
             let phoneScreen = new THREE.Mesh(screenGeo, screenMat); phoneScreen.position.y = depth / 2 + 0.01; phoneGroup.add(phoneScreen);
 
-            // ขยายความยาวลูกศรบอกแนวพิกัดแกนให้ยาวชัดเจนตามโมเดล
             const origin = new THREE.Vector3(0, depth / 2 + 0.03, 0);
-            let arrowX = new THREE.ArrowHelper(new THREE.Vector3(1, 0, 0), origin, 1.8, 0xef4444, 0.3, 0.15);
-            let arrowY = new THREE.ArrowHelper(new THREE.Vector3(0, 0, -1), origin, 1.8, 0x0ea5e9, 0.3, 0.15);
-            let arrowZ = new THREE.ArrowHelper(new THREE.Vector3(0, 1, 0), origin, 1.8, 0x6366f1, 0.3, 0.15);
+            let arrowX = new THREE.ArrowHelper(new THREE.Vector3(1, 0, 0), origin, 1.35, 0xef4444, 0.24, 0.1);
+            let arrowY = new THREE.ArrowHelper(new THREE.Vector3(0, 0, -1), origin, 1.35, 0x0ea5e9, 0.24, 0.1);
+            let arrowZ = new THREE.ArrowHelper(new THREE.Vector3(0, 1, 0), origin, 1.35, 0x6366f1, 0.24, 0.1);
             phoneGroup.add(arrowX); phoneGroup.add(arrowY); phoneGroup.add(arrowZ);
             scene.add(phoneGroup);
 
