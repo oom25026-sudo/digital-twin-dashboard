@@ -19,29 +19,27 @@
             color: #334155;
             margin: 0;
             padding: 20px;
-            height: 100vh;
-            overflow: hidden;
+            min-height: 100vh;
         }
         .app-container {
             display: flex;
             flex-direction: column;
-            height: 100%;
             max-width: 1600px;
             margin: 0 auto;
-            gap: 16px;
+            gap: 20px;
         }
         
         /* Premium Header */
         .header-panel {
             background: #ffffff;
-            padding: 0 28px;
+            padding: 16px 28px;
             border-radius: 14px;
             border: 1px solid #e2e8f0;
             display: flex;
+            flex-wrap: wrap;
             justify-content: space-between;
             align-items: center;
-            height: 70px;
-            flex-shrink: 0;
+            gap: 12px;
             box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02), 0 2px 4px -1px rgba(0,0,0,0.01);
         }
         .main-title {
@@ -54,19 +52,23 @@
             gap: 12px;
         }
         
-        /* Grid Layout Dynamic Split */
+        /* Grid Layout Dynamic Split - No Overlap */
         .grid-layout {
             display: grid;
-            grid-template-columns: 1.65fr 1fr;
-            gap: 16px;
-            flex-grow: 1;
-            min-height: 0;
+            grid-template-columns: 1.6fr 1fr;
+            gap: 20px;
+            align-items: start;
         }
+        @media (max-width: 1024px) {
+            .grid-layout {
+                grid-template-columns: 1fr;
+            }
+        }
+        
         .main-left-column, .sidebar-right-column {
             display: flex;
             flex-direction: column;
-            gap: 16px;
-            min-height: 0;
+            gap: 20px;
         }
         
         /* Elegant Cards design */
@@ -74,15 +76,14 @@
             background: #ffffff;
             border: 1px solid #e2e8f0;
             border-radius: 14px;
-            padding: 20px;
+            padding: 24px;
             display: flex;
             flex-direction: column;
-            min-height: 0;
             box-shadow: 0 10px 15px -3px rgba(15, 23, 42, 0.04);
             position: relative;
         }
         .panel-heading {
-            margin: 0 0 14px 0;
+            margin: 0 0 16px 0;
             font-size: 14px;
             font-weight: 700;
             text-transform: uppercase;
@@ -95,18 +96,16 @@
         
         /* Model Canvas Adjustments */
         .model-core-panel {
-            flex-grow: 1;
-            min-height: 400px;
+            min-height: 450px;
         }
         .canvas-container {
             position: relative;
             width: 100%;
-            flex-grow: 1;
+            height: 320px;
             border-radius: 12px;
             border: 1px solid #e2e8f0;
             overflow: hidden;
             background: radial-gradient(circle at center, #ffffff 0%, #f8fafc 100%);
-            min-height: 0;
         }
         #canvas3d {
             width: 100%;
@@ -165,9 +164,8 @@
         /* Realtime Extended Chart */
         .chart-container {
             position: relative;
-            height: 125px;
+            height: 160px;
             width: 100%;
-            min-height: 0;
         }
         
         /* Action UI Buttons Control */
@@ -175,7 +173,7 @@
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 10px;
-            margin-top: 10px;
+            margin-top: 14px;
         }
         .action-btn {
             background: #0284c7;
@@ -222,6 +220,7 @@
             display: grid;
             grid-template-columns: repeat(3, 1fr);
             gap: 12px;
+            margin-bottom: 16px;
         }
         .metric-box {
             background: #f8fafc;
@@ -237,17 +236,43 @@
             margin-top: 4px;
         }
         
+        .rom-bar-container {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            padding: 14px;
+        }
+        .rom-bar-label {
+            font-size: 12px;
+            color: #64748b;
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 6px;
+        }
+        .rom-progress-bg {
+            background: #e2e8f0;
+            height: 8px;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        .rom-progress-fill {
+            background: linear-gradient(90deg, #0ea5e9, #4f46e5);
+            height: 100%;
+            width: 0%;
+            transition: width 0.2s ease;
+        }
+
         /* Validation Grid Capsular Design */
         .validation-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 10px;
+            gap: 12px;
         }
         .val-card {
             background: #f8fafc;
             border: 1px solid #e2e8f0;
             border-radius: 10px;
-            padding: 12px 14px;
+            padding: 14px;
             display: flex;
             flex-direction: column;
             justify-content: center;
@@ -256,22 +281,21 @@
             font-size: 11px;
             color: #64748b;
             font-weight: 600;
-            margin-bottom: 2px;
+            margin-bottom: 4px;
         }
         .val-data {
-            font-size: 15px;
+            font-size: 16px;
             font-weight: 700;
             color: #0f172a;
         }
         
         /* Smooth Modern Table */
         .table-wrapper {
-            flex-grow: 1;
-            overflow-y: auto;
             border: 1px solid #e2e8f0;
             border-radius: 10px;
-            margin-top: 10px;
-            min-height: 0;
+            margin-top: 14px;
+            max-height: 200px;
+            overflow-y: auto;
         }
         table {
             width: 100%;
@@ -342,6 +366,7 @@
 <body>
 
 <div class="app-container">
+    <!-- 1. Elegant Dashboard Header -->
     <div class="header-panel">
         <h1 class="main-title">🌌 Antigravity Motion Twin <span style="font-weight: 300; color:#cbd5e1;">|</span> <span style="font-size:13px; color:#64748b; font-weight:600; background:#f1f5f9; padding:4px 10px; border-radius:6px;">CLINICAL LAB v2.4</span></h1>
         <div style="display: flex; gap: 12px;">
@@ -350,8 +375,10 @@
         </div>
     </div>
 
+    <!-- 2. Dual Panel Dynamic System Layout -->
     <div class="grid-layout">
         
+        <!-- ซีกซ้าย: โมเดล 3D และตัวประมวลผลความถี่กราฟเส้นเรียลไทม์ -->
         <div class="main-left-column">
             <div class="card-panel model-core-panel">
                 <div class="single-metric-display">
@@ -381,15 +408,18 @@
                 </div>
             </div>
 
-            <div class="card-panel" style="padding: 12px 16px;">
+            <!-- กล่องแสดงกราฟเส้นเพื่อวิเคราะห์ทิศทางคลื่นสัญญาณอย่างละเอียด -->
+            <div class="card-panel" style="padding: 16px 20px;">
                 <div class="chart-container">
                     <canvas id="realtimeChart"></canvas>
                 </div>
             </div>
         </div>
 
+        <!-- ซีกขวา: Diagnostics แผงตรวจสอบ และบันทึกประวัติการบำบัด -->
         <div class="sidebar-right-column">
             
+            <!-- ส่วนที่ 1: การตรวจจับความเสถียรและการสั่นไหว -->
             <div class="card-panel" style="border-top: 4px solid #0ea5e9;">
                 <div class="panel-heading">🔍 Stability Diagnostics</div>
                 <div class="metrics-grid-3">
@@ -416,6 +446,7 @@
                 </div>
             </div>
 
+            <!-- ส่วนที่ 2: บล็อกระบบตรวจรับข้อมูลและตรวจสอบพิกัด (Data Sync & Validation Monitor) -->
             <div class="card-panel" style="border-top: 4px solid #10b981;">
                 <div class="panel-heading">📡 Data Sync & Validation Monitor</div>
                 <div class="validation-grid">
@@ -438,6 +469,7 @@
                 </div>
             </div>
 
+            <!-- ส่วนที่ 3: ช่วงขอบเขตพิกัดการยกองศา (Range of Motion) -->
             <div class="card-panel" style="border-top: 4px solid #6366f1;">
                 <div class="panel-heading">📊 Range of Motion (ROM) ประจำเซ็ต</div>
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; text-align: center;">
@@ -452,8 +484,10 @@
                 </div>
             </div>
 
-            <div class="card-panel" style="flex-grow: 1;">
-                <div style="display: flex; justify-content: space-between; align-items:center; background: #f8fafc; padding: 10px 16px; border-radius: 10px; border: 1px solid #e2e8f0; margin-bottom:12px;">
+            <!-- ส่วนที่ 4: การทำงานควบคุมเซสชันและตารางประวัติ Log -->
+            <div class="card-panel" style="border-top: 4px solid #64748b;">
+                <div class="panel-heading">⏱️ Session Controls & Log</div>
+                <div style="display: flex; justify-content: space-between; align-items:center; background: #f8fafc; padding: 10px 16px; border-radius: 10px; border: 1px solid #e2e8f0; margin-bottom:4px;">
                     <div style="font-size:13px; font-weight:500;">เซ็ตปัจจุบัน: <span id="lblSet" style="font-weight: 700; color: #4f46e5;">1</span></div>
                     <div style="font-size:13px; font-weight:500;">เวลาเซสชัน: <span id="lblTimer" style="font-weight: 700; color:#10b981;">0 วินาที</span></div>
                 </div>
@@ -488,6 +522,7 @@
     </div>
 </div>
 
+<!-- สแกนเชื่อมต่ออุปกรณ์ส่งสัญญาณไร้สาย QR Code -->
 <div id="qrModal" class="modal">
     <div class="modal-content">
         <h3 style="margin-top: 0; color: #0f172a; font-size:17px; font-weight:700;">📱 เชื่อมโยงสัญญาณโมบายพิกัด</h3>
