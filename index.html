@@ -3,143 +3,198 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Clinical Motion Twin - Bio-Validation & Assessment System</title>
+    <title>Antigravity Clinical Motion Twin - Light Mega Model</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        body {
+        * {
+            box-sizing: border-box;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #0f172a;
-            color: #f8fafc;
+        }
+        body {
+            background-color: #f4f6f9;
+            color: #334155;
             margin: 0;
-            padding: 20px;
+            padding: 16px;
+            height: 100vh;
+            overflow: hidden;
         }
         .app-container {
-            max-width: 1250px;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            max-width: 1650px;
             margin: 0 auto;
+            gap: 12px;
         }
         .header-panel {
-            background: linear-gradient(135deg, #1e293b, #0f172a);
-            padding: 20px;
+            background: #ffffff;
+            padding: 0 24px;
             border-radius: 12px;
-            border: 1px solid #334155;
-            margin-bottom: 20px;
+            border: 1px solid #e2e8f0;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            height: 65px;
+            flex-shrink: 0;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
         }
         .main-title {
             margin: 0;
-            font-size: 24px;
-            color: #38bdf8;
-            font-weight: 800;
+            font-size: 22px;
+            color: #0f172a;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
         .grid-layout {
             display: grid;
-            grid-template-columns: 2fr 1fr;
-            gap: 20px;
+            grid-template-columns: 2.6fr 1.4fr;
+            gap: 14px;
+            flex-grow: 1;
+            min-height: 0;
+        }
+        .main-left-column, .sidebar-right-column {
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            min-height: 0;
         }
         .card-panel {
-            background: #1e293b;
-            border: 1px solid #334155;
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
             border-radius: 12px;
-            padding: 20px;
-            margin-bottom: 20px;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+        }
+        .model-core-panel {
+            flex-grow: 1;
+            position: relative;
+        }
+        .canvas-container {
+            position: relative;
+            width: 100%;
+            flex-grow: 1;
+            border-radius: 10px;
+            border: 1px solid #cbd5e1;
+            overflow: hidden;
+            background-color: #f8fafc;
+            min-height: 0;
+        }
+        #canvas3d {
+            width: 100%;
+            height: 100%;
+        }
+        .gauge-bar-wrapper {
+            background: #e2e8f0;
+            height: 8px;
+            border-radius: 4px;
+            margin: 8px 0 14px 0;
+            overflow: hidden;
+            position: relative;
+        }
+        .gauge-bar-fill {
+            background: #0284c7;
+            height: 100%;
+            width: 50%;
+            transition: width 0.1s ease;
         }
         .metrics-grid-3 {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
             gap: 10px;
-            margin-top: 12px;
+            margin-top: 10px;
         }
-        /* Single Metric Dashboard Card */
-        .single-metric-box {
-            background: #0f172a;
-            border: 1px solid #38bdf8;
-            border-radius: 10px;
-            text-align: center;
-            padding: 20px;
-            margin-bottom: 15px;
-        }
-        .metric-value {
-            font-size: 36px;
-            font-weight: bold;
-            color: #38bdf8;
-            margin-top: 8px;
-        }
-        .canvas-container {
-            position: relative;
-            width: 100%;
-            height: 350px;
-            margin-bottom: 15px;
+        .metric-box {
+            background: #f8fafc;
+            padding: 12px;
             border-radius: 8px;
-            border: 2px solid #334155;
-            overflow: hidden;
-            transition: border-color 0.3s ease;
+            border: 1px solid #e2e8f0;
+            text-align: center;
         }
-        #canvas3d {
-            width: 100%;
-            height: 100%;
-            background-color: #0f172a;
+        .single-metric-display {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #f0f9ff;
+            border: 1px solid #bae6fd;
+            border-radius: 10px;
+            padding: 12px 20px;
+        }
+        .metric-value-large {
+            font-size: 36px;
+            font-weight: 800;
+            color: #0369a1;
         }
         .status-badge {
             position: absolute;
-            top: 15px;
-            left: 15px;
-            padding: 6px 12px;
-            border-radius: 6px;
-            font-weight: bold;
-            font-size: 13px;
+            top: 12px;
+            left: 12px;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 12px;
             z-index: 10;
-            background: #334155;
-            color: #94a3b8;
-            border: 1px solid #475569;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
         }
         .chart-container {
             position: relative;
-            height: 220px;
+            height: 150px;
             width: 100%;
-            margin-top: 10px;
+            min-height: 0;
         }
         .btn-panel-group {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            margin-top: 15px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-top: 10px;
         }
         .action-btn {
-            background: #38bdf8;
-            color: #0f172a;
+            background: #0284c7;
+            color: #ffffff;
             border: none;
-            padding: 12px 20px;
+            padding: 12px;
             border-radius: 8px;
-            font-weight: bold;
+            font-weight: 600;
             cursor: pointer;
-            transition: 0.2s;
-            font-size: 15px;
+            transition: all 0.2s;
+            font-size: 13px;
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 8px;
-            width: 100%;
+            gap: 6px;
         }
-        .action-btn.secondary-slate {
-            background-color: #475569;
-            color: white;
+        .action-btn:hover {
+            background: #0369a1;
+            transform: translateY(-1px);
+        }
+        .action-btn.secondary {
+            background: #f1f5f9;
+            color: #475569;
+            border: 1px solid #cbd5e1;
+        }
+        .action-btn.secondary:hover {
+            background: #e2e8f0;
+        }
+        .action-btn.danger {
+            background: #ef4444;
+        }
+        .action-btn.danger:hover {
+            background: #dc2626;
         }
         .axis-legend {
             display: flex;
             justify-content: center;
             gap: 20px;
-            font-size: 13px;
-            margin-bottom: 12px;
-            background: #0f172a;
-            padding: 8px;
-            border-radius: 6px;
-            border: 1px solid #334155;
+            font-size: 12px;
+            margin-bottom: 10px;
         }
         .legend-item {
             display: flex;
@@ -149,33 +204,64 @@
         .color-dot {
             width: 12px;
             height: 12px;
-            border-radius: 50%;
+            border-radius: 4px;
         }
         .rom-bar-container {
-            background: #0f172a;
-            border: 1px solid #334155;
-            border-radius: 6px;
-            padding: 8px;
-            margin-top: 8px;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 10px;
+            margin-top: 10px;
         }
         .rom-bar-label {
-            font-size: 11px;
-            color: #94a3b8;
+            font-size: 12px;
+            color: #64748b;
             display: flex;
             justify-content: space-between;
             margin-bottom: 4px;
         }
         .rom-progress-bg {
-            background: #1e293b;
-            height: 6px;
-            border-radius: 3px;
+            background: #e2e8f0;
+            height: 8px;
+            border-radius: 4px;
             overflow: hidden;
         }
         .rom-progress-fill {
-            background: linear-gradient(90deg, #22c55e, #4ade80);
+            background: linear-gradient(90deg, #0ea5e9, #4f46e5);
             height: 100%;
             width: 0%;
             transition: width 0.2s ease;
+        }
+        .table-wrapper {
+            flex-grow: 1;
+            overflow-y: auto;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            margin-top: 8px;
+            min-height: 0;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+            text-align: left;
+        }
+        th {
+            background: #f8fafc;
+            color: #64748b;
+            padding: 10px;
+            font-weight: 600;
+            border-bottom: 1px solid #e2e8f0;
+            position: sticky;
+            top: 0;
+        }
+        td {
+            padding: 10px;
+            border-bottom: 1px solid #f1f5f9;
+            color: #475569;
+        }
+        tr:last-child td {
+            border-bottom: none;
         }
         .modal {
             display: none;
@@ -184,135 +270,172 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0, 0, 0, 0.7);
+            background: rgba(15, 23, 42, 0.3);
             align-items: center;
             justify-content: center;
             z-index: 99;
         }
         .modal-content {
-            background: #1e293b;
-            padding: 25px;
-            border-radius: 12px;
+            background: #ffffff;
+            padding: 30px;
+            border-radius: 16px;
             text-align: center;
-            border: 1px solid #334155;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1);
         }
     </style>
 </head>
 <body>
 
 <div class="app-container">
+    <!-- 1. Header Panel -->
     <div class="header-panel">
-        <h1 class="main-title">🏥 Clinical Motion Twin - Bio-Validation & Assessment System</h1>
+        <h1 class="main-title">🌌 Antigravity Motion Twin <span style="font-weight: 300; color:#94a3b8;">|</span> <span style="font-size:14px; color:#64748b; font-weight:500;">Clinical Dashboard</span></h1>
         <div style="display: flex; gap: 10px;">
-            <button id="btnResetROM" style="background-color: #ef4444; color: white; border: none; padding: 8px 15px; border-radius: 6px; cursor: pointer; font-weight: bold;">🔄 รีเซ็ตค่า ROM</button>
-            <button id="btnOpenQR" style="background-color: #38bdf8; color: #0f172a; border: none; padding: 8px 15px; border-radius: 6px; cursor: pointer; font-weight: bold;">📱 ต่อมือถือ</button>
+            <button id="btnResetROM" class="action-btn secondary" style="padding: 8px 16px;">🔄 รีเซ็ตค่า ROM</button>
+            <button id="btnOpenQR" class="action-btn" style="padding: 8px 16px; background:#0f172a;">📱 เชื่อมต่อมือถือ</button>
         </div>
     </div>
 
+    <!-- 2. Main Layout Dashboard -->
     <div class="grid-layout">
-        <div>
-            <div class="card-panel" style="border-left: 4px solid #38bdf8;">
-                <h3 style="margin: 0; color: #38bdf8; font-size: 16px;">🔍 ข้อมูลวิเคราะห์ความเสถียรระนาบเครื่อง (Stability Diagnostics)</h3>
-                
-                <div class="metrics-grid-3">
-                    <div class="metric-box" style="padding: 10px;">
-                        <div style="font-size: 12px; color: #94a3b8;">อัตราการสั่นไหว (Jitter)</div>
-                        <div id="lblJitter" style="font-size: 20px; font-weight: bold; margin-top: 5px; color: #f1f5f9;">0.00°</div>
+        
+        <!-- ฝั่งซ้าย: พื้นที่แสดงผลลัพธ์และโมเดล 3D (ขยายขนาดโมเดลแล้ว) -->
+        <div class="main-left-column">
+            <div class="card-panel model-core-panel">
+                <div class="single-metric-display">
+                    <div>
+                        <div style="font-size: 12px; color: #0284c7; font-weight: 600; letter-spacing: 0.5px;">🏋️‍♂️ องศาการยกตัวปัจจุบัน (Elevation Angle)</div>
+                        <div id="lblElevation" class="metric-value-large">0.0°</div>
                     </div>
-                    <div class="metric-box" style="padding: 10px;">
-                        <div style="font-size: 12px; color: #94a3b8;">ระดับเกรด (Grading)</div>
-                        <div id="lblGrade" style="font-size: 18px; font-weight: bold; margin-top: 7px; color: #ef4444;">❌ Unstable</div>
-                    </div>
-                    <div class="metric-box" style="padding: 10px;">
-                        <div style="font-size: 12px; color: #94a3b8;">รวมเวลาที่นิ่งสนิท</div>
-                        <div id="lblStableTime" style="font-size: 20px; font-weight: bold; margin-top: 5px; color: #4ade80;">0.0s</div>
+                    <div style="text-align: right;">
+                        <span style="font-size: 11px; color: #64748b;">สถานะแกน Y</span>
+                        <div style="font-size:14px; font-weight:600; color:#0369a1; margin-top:4px;">Live Dynamic Tracking</div>
                     </div>
                 </div>
 
-                <div class="rom-bar-container">
-                    <div class="rom-bar-label">
-                        <span>ความสม่ำเสมอของระนาบราบ (Flatness Verification Progress)</span>
-                        <span id="lblStablePercent">0%</span>
-                    </div>
-                    <div class="rom-progress-bg"><div id="barStableProgress" class="rom-progress-fill"></div></div>
-                </div>
-            </div>
-
-            <div class="card-panel">
-                <!-- 🛠️ ปรับเหลือเฉพาะกล่องแสดงองศาการยกตัว (Elevation) ตามความต้องการ -->
-                <div class="single-metric-box">
-                    <div style="font-size: 14px; color: #38bdf8; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">🏋️‍♂️ องศาการยกตัว (Elevation)</div>
-                    <div id="lblElevation" class="metric-value">0.0°</div>
+                <div class="gauge-bar-wrapper">
+                    <div id="gaugeBar" class="gauge-bar-fill"></div>
                 </div>
 
                 <div class="axis-legend">
-                    <div class="legend-item"><div class="color-dot" style="background: #ef4444;"></div><span>🔴 แกน X (เอียง ซ้าย-ขวา)</span></div>
-                    <div class="legend-item"><div class="color-dot" style="background: #22c55e;"></div><span>🟢 แกน Y (ยกหัวเครื่อง ก้ม-เงย)</span></div>
-                    <div class="legend-item"><div class="color-dot" style="background: #3b82f6;"></div><span>🔵 แกน Z (ทิศตั้งฉากขึ้นจากพื้นผิว)</span></div>
+                    <div class="legend-item"><div class="color-dot" style="background: #ef4444;"></div><span>แกน X (Pitch)</span></div>
+                    <div class="legend-item"><div class="color-dot" style="background: #0ea5e9;"></div><span>แกน Y (Roll)</span></div>
+                    <div class="legend-item"><div class="color-dot" style="background: #6366f1;"></div><span>แกน Z (Yaw)</span></div>
                 </div>
 
                 <div class="canvas-container" id="canvasWrapper">
-                    <div id="statusBadge" class="status-badge">⏳ รอกำหนดระนาบ...</div>
+                    <div id="statusBadge" class="status-badge">⏳ รอกำหนดระนาบอุปกรณ์...</div>
                     <div id="canvas3d"></div>
                 </div>
+            </div>
 
+            <!-- กราฟเส้นแบบพรีเมียม -->
+            <div class="card-panel" style="padding: 12px;">
                 <div class="chart-container">
                     <canvas id="realtimeChart"></canvas>
                 </div>
             </div>
         </div>
 
-        <div>
-            <div class="card-panel" style="border-left: 4px solid #a855f7;">
-                <h3 style="margin: 0; color: #a855f7; font-size: 15px;">📊 ผลลัพธ์ ROM รวมประจำเซ็ต</h3>
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; text-align: center;">
-                    <div style="background: #0f172a; padding: 10px; border-radius: 6px;">
-                        <span style="font-size: 11px; color:#94a3b8;">Pitch ROM</span>
-                        <div id="lblPitchROM" style="font-size: 18px; font-weight: bold; color:#a855f7;">0.0°</div>
+        <!-- ฝั่งขวา: Diagnostics & Smart History Log -->
+        <div class="sidebar-right-column">
+            
+            <!-- ส่วนการประเมินความเสถียร -->
+            <div class="card-panel" style="border-top: 4px solid #0ea5e9;">
+                <h4 style="margin: 0 0 10px 0; color: #0f172a; font-size: 15px;">🔍 Stability Diagnostics</h4>
+                <div class="metrics-grid-3">
+                    <div class="metric-box">
+                        <div style="font-size: 11px; color: #64748b; margin-bottom:4px;">Jitter</div>
+                        <div id="lblJitter" style="font-size: 16px; font-weight: 700; color: #1e293b;">0.00°</div>
                     </div>
-                    <div style="background: #0f172a; padding: 10px; border-radius: 6px;">
-                        <span style="font-size: 11px; color:#94a3b8;">Roll ROM</span>
-                        <div id="lblRollROM" style="font-size: 18px; font-weight: bold; color:#fbbf24;">0.0°</div>
+                    <div class="metric-box">
+                        <div style="font-size: 11px; color: #64748b; margin-bottom:4px;">Grading</div>
+                        <div id="lblGrade" style="font-size: 12px; font-weight: 700; color: #ef4444;">❌ Unstable</div>
+                    </div>
+                    <div class="metric-box">
+                        <div style="font-size: 11px; color: #64748b; margin-bottom:4px;">เวลาที่นิ่ง</div>
+                        <div id="lblStableTime" style="font-size: 16px; font-weight: 700; color: #10b981;">0.0s</div>
+                    </div>
+                </div>
+
+                <div class="rom-bar-container">
+                    <div class="rom-bar-label">
+                        <span>Flatness Verification Progress</span>
+                        <span id="lblStablePercent" style="font-weight:600; color: #0284c7;">0%</span>
+                    </div>
+                    <div class="rom-progress-bg"><div id="barStableProgress" class="rom-progress-fill"></div></div>
+                </div>
+            </div>
+
+            <!-- การคำนวณช่วงพิสัยรวม ROM -->
+            <div class="card-panel" style="border-top: 4px solid #6366f1;">
+                <h4 style="margin: 0 0 10px 0; color: #0f172a; font-size: 15px;">📊 Range of Motion (ROM) รวมประจำเซ็ต</h4>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; text-align: center;">
+                    <div style="background: #f8fafc; padding: 10px; border-radius: 8px; border: 1px solid #e2e8f0;">
+                        <span style="font-size: 11px; color:#64748b;">Pitch Total ROM</span>
+                        <div id="lblPitchROM" style="font-size: 18px; font-weight: 700; color:#4f46e5; margin-top:2px;">0.0°</div>
+                    </div>
+                    <div style="background: #f8fafc; padding: 10px; border-radius: 8px; border: 1px solid #e2e8f0;">
+                        <span style="font-size: 11px; color:#64748b;">Roll Total ROM</span>
+                        <div id="lblRollROM" style="font-size: 18px; font-weight: 700; color:#0ea5e9; margin-top:2px;">0.0°</div>
                     </div>
                 </div>
             </div>
 
-            <div class="card-panel">
-                <h3 style="margin: 0; font-size: 16px; text-align: center;">⏱️ บันทึกเซสชันผลการทดสอบ</h3>
-                <div style="font-size: 14px; margin: 20px 0 8px 0;">เซ็ตทดสอบปัจจุบัน: <span id="lblSet" style="font-weight: bold; color: #38bdf8;">1</span></div>
-                <div style="font-size: 14px; margin-bottom: 20px;">เวลาทดสอบ: <span id="lblTimer" style="font-weight: bold; color:#4ade80;">0 วินาที</span></div>
+            <!-- ตารางสรุป Log และปุ่มควบคุมการจัดการไฟล์ -->
+            <div class="card-panel" style="flex-grow: 1;">
+                <h4 style="margin: 0 0 4px 0; font-size: 14px; color: #1e293b;">⏱️ เซสชันชุดทดสอบ</h4>
+                <div style="display: flex; justify-content: space-between; font-size: 12px; background: #f8fafc; padding: 8px 12px; border-radius: 6px; border: 1px solid #e2e8f0;">
+                    <div>เซ็ตปัจจุบัน: <span id="lblSet" style="font-weight: 700; color: #4f46e5;">1</span></div>
+                    <div>เวลาบันทึก: <span id="lblTimer" style="font-weight: 700; color:#10b981;">0 วินาที</span></div>
+                </div>
                 
                 <div class="btn-panel-group">
-                    <button id="btnStart" class="action-btn">• เริ่มการทดสอบ</button>
-                    <button id="btnSave" class="action-btn secondary-slate">✓ บันทึกชุดข้อมูล</button>
-                    <button id="btnExport" class="action-btn" style="background-color: #0284c7; color: white;">↓ ส่งออกไฟล์มาตรฐาน (.CSV)</button>
-                    <button id="btnResetSession" class="action-btn" style="background-color: #ef4444; color: white;">🔄 รีเซ็ตเซสชัน</button>
+                    <button id="btnStart" class="action-btn">เริ่มการทดสอบ</button>
+                    <button id="btnSave" class="action-btn secondary">บันทึกชุดข้อมูล</button>
+                    <button id="btnExport" class="action-btn secondary" style="color: #0284c7; font-weight:700;">ส่งออก CSV</button>
+                    <button id="btnResetSession" class="action-btn danger">ล้างประวัติเซ็ต</button>
                 </div>
                 
-                <div id="logOutput" style="margin-top: 20px; font-size: 12px; color: #94a3b8; max-height: 140px; overflow-y: auto; border-top: 1px solid #334155; padding-top: 15px; line-height: 1.6;">
-                    <span style="color: #64748b;">ยังไม่มีการบันทึกชุดข้อมูล...</span>
+                <h5 style="margin: 14px 0 6px 0; font-size: 12px; color: #64748b; font-weight:600;">HISTORY ANALYTICS LOG:</h5>
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>เซ็ตที่</th>
+                                <th>เวลา (วิ)</th>
+                                <th>Pitch ROM</th>
+                                <th>Roll ROM</th>
+                            </tr>
+                        </thead>
+                        <tbody id="logTableBody">
+                            <tr>
+                                <td colspan="4" style="text-align: center; color: #94a3b8; padding: 20px;">ยังไม่มีข้อมูลบันทึกในเซสชันนี้</td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
+
         </div>
     </div>
 </div>
 
 <div id="qrModal" class="modal">
     <div class="modal-content">
-        <h3 style="margin-top: 0;">📱 สแกนเชื่อมต่อมือถือตัวส่งค่า</h3>
-        <div id="qrcode" style="display: flex; justify-content: center; margin: 20px 0;"></div>
-        <button id="btnCloseQR" class="action-btn secondary-slate" style="width: auto; margin: 0 auto; display: block;">ปิดหน้าต่าง</button>
+        <h3 style="margin-top: 0; color: #0f172a; font-size:18px;">📱 สแกน QR Code เพื่อต่อตัวส่งสัญญาณมือถือ</h3>
+        <div id="qrcode" style="display: flex; justify-content: center; margin: 20px 0; padding: 8px; background:white; border-radius:8px;"></div>
+        <button id="btnCloseQR" class="action-btn secondary" style="width: 120px; margin: 0 auto;">ปิดหน้าต่าง</button>
     </div>
 </div>
 
 <script>
     window.addEventListener('DOMContentLoaded', () => {
-        // 🔗 1. ตั้งค่า Firebase ให้เรียบร้อย
         const firebaseConfig = { databaseURL: "https://llllllll-3c932-default-rtdb.asia-southeast1.firebasedatabase.app/" };
         if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
         const db = firebase.database();
 
-        // 💾 Status Variables for Core Engine States
         let isRecording = false;
         let timerCount = 0;
         let clockInterval = null;
@@ -326,14 +449,12 @@
         let stableTicks = 0;
         const targetStableTicks = 60;
 
-        // 🌀 Complementary Filter Engine Parameters
         let filteredPitch = 0;
         let filteredRoll = 0;
         let lastTimestamp = Date.now();
         let isFirstRun = true;
         const ALPHA = 0.96;
 
-        // ดึงอิลิเมนต์ต่าง ๆ จาก UI DOM
         const btnStart = document.getElementById("btnStart");
         const btnSave = document.getElementById("btnSave");
         const btnExport = document.getElementById("btnExport");
@@ -344,25 +465,24 @@
         
         const lblTimer = document.getElementById("lblTimer");
         const lblSet = document.getElementById("lblSet");
-        const logOutput = document.getElementById("logOutput");
+        const logTableBody = document.getElementById("logTableBody");
         const canvasWrapper = document.getElementById("canvasWrapper");
         const statusBadge = document.getElementById("statusBadge");
+        const gaugeBar = document.getElementById("gaugeBar");
 
-        // 🔗 ซิงค์ค่าหมายเลขเซ็ตปัจจุบันจากฐานข้อมูล Firebase Realtime
         db.ref("system/currentSetNum").on("value", (snapshot) => {
             if (snapshot.exists()) { currentSetNum = snapshot.val(); }
             lblSet.textContent = currentSetNum;
         });
 
-        // 📊 ตั้งค่าโครงสร้าง Chart.js เรียลไทม์
         const ctx = document.getElementById('realtimeChart').getContext('2d');
         const realtimeChart = new Chart(ctx, {
             type: 'line',
             data: {
                 labels: Array(20).fill(''),
                 datasets: [
-                    { label: 'Pitch', borderColor: '#4ade80', data: Array(20).fill(0), fill: false, tension: 0.1, borderWidth: 2 },
-                    { label: 'Roll', borderColor: '#fbbf24', data: Array(20).fill(0), fill: false, tension: 0.1, borderWidth: 2 }
+                    { label: 'Pitch', borderColor: '#ef4444', data: Array(20).fill(0), fill: false, tension: 0.1, borderWidth: 2, pointRadius: 0 },
+                    { label: 'Roll', borderColor: '#0ea5e9', data: Array(20).fill(0), fill: false, tension: 0.1, borderWidth: 2, pointRadius: 0 }
                 ]
             },
             options: {
@@ -370,7 +490,7 @@
                 plugins: { legend: { display: false } },
                 scales: {
                     x: { display: false },
-                    y: { min: -90, max: 90, grid: { color: '#334155' }, ticks: { color: '#64748b' } }
+                    y: { min: -90, max: 90, grid: { color: '#f1f5f9' }, ticks: { color: '#94a3b8' } }
                 }
             }
         });
@@ -381,6 +501,7 @@
             document.getElementById("lblPitchROM").textContent = "0.0°";
             document.getElementById("lblRollROM").textContent = "0.0°";
             document.getElementById("lblElevation").textContent = "0.0°";
+            gaugeBar.style.width = "50%";
         }
 
         db.ref("system/resetSignal").on("value", (snapshot) => {
@@ -396,17 +517,17 @@
             clearInterval(clockInterval);
             
             if (isRecording) {
-                btnStart.textContent = "⏸ หยุดค้างค่าการตรวจ";
-                btnStart.style.backgroundColor = "#0ea5e9";
-                btnStart.style.color = "#ffffff";
+                btnStart.textContent = "⏸ หยุดค้างค่า";
+                btnStart.style.background = "#e2e8f0";
+                btnStart.style.color = "#334155";
                 clockInterval = setInterval(() => { 
                     timerCount++; 
                     lblTimer.textContent = timerCount + " วินาที"; 
                 }, 1000);
             } else {
-                btnStart.textContent = "• เริ่มการทดสอบ";
-                btnStart.style.backgroundColor = "#38bdf8";
-                btnStart.style.color = "#0f172a";
+                btnStart.textContent = "เริ่มการทดสอบ";
+                btnStart.style.background = "#0284c7";
+                btnStart.style.color = "#ffffff";
             }
         });
 
@@ -415,7 +536,7 @@
             document.getElementById("qrcode").innerHTML = "";
             let currentURL = window.location.href;
             let targetURL = currentURL.substring(0, currentURL.lastIndexOf("/")) + "/phone.html";
-            new QRCode(document.getElementById("qrcode"), { text: targetURL, width: 160, height: 160 });
+            new QRCode(document.getElementById("qrcode"), { text: targetURL, width: 150, height: 150 });
         };
         btnCloseQR.onclick = () => { document.getElementById("qrModal").style.display = "none"; };
 
@@ -423,18 +544,18 @@
             let pRom = document.getElementById("lblPitchROM").textContent.replace('°','');
             let rRom = document.getElementById("lblRollROM").textContent.replace('°','');
             
-            recordsList.push({ 
-                set: currentSetNum, 
-                duration: timerCount, 
-                pitchRom: pRom, 
-                rollRom: rRom
-            });
+            recordsList.push({ set: currentSetNum, duration: timerCount, pitchRom: pRom, rollRom: rRom });
 
             let logHTML = "";
             recordsList.forEach((r) => {
-                logHTML += `<div style="margin-bottom:4px; border-bottom: 1px dashed #334155; padding-bottom: 4px;">ชุดที่ ${r.set} เวลา ${r.duration} วิ (Pitch ROM: ${r.pitchRom}° / Roll ROM: ${r.rollRom}°)</div>`;
+                logHTML += `<tr>
+                    <td><b>ชุดที่ ${r.set}</b></td>
+                    <td>${r.duration} วิ</td>
+                    <td style="color:#4f46e5; font-weight:600;">${r.pitchRom}°</td>
+                    <td style="color:#0ea5e9; font-weight:600;">${r.rollRom}°</td>
+                </tr>`;
             });
-            logOutput.innerHTML = logHTML;
+            logTableBody.innerHTML = logHTML;
 
             db.ref("system/resetSignal").set(true).then(() => { db.ref("system/resetSignal").set(false); });
             currentSetNum++;
@@ -445,29 +566,24 @@
         };
 
         btnExport.onclick = () => {
-            if(!recordsList.length) { return alert("ไม่มีข้อมูลสำหรับการส่งออกไฟล์ในขณะนี้ครับ โปรดบันทึกเซ็ตข้อมูลก่อนกดดาวน์โหลด"); }
-            
+            if(!recordsList.length) { return alert("ไม่มีข้อมูลสำหรับการส่งออกไฟล์ในขณะนี้ครับ"); }
             let csv = "Set,Duration_Seconds,Pitch_ROM,Roll_ROM,Last_Accel_Pitch,Last_Accel_Roll,Last_Gyro_Pitch,Last_Gyro_Roll,Export_Timestamp\n";
             let isoTimestamp = new Date().toISOString();
-
             recordsList.forEach(r => { 
                 csv += `${r.set},${r.duration},${r.pitchRom},${r.rollRom},${filteredPitch.toFixed(2)},${filteredRoll.toFixed(2)},${lastPitch.toFixed(2)},${lastRoll.toFixed(2)},${isoTimestamp}\n`; 
             });
-            
             let blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
             let link = document.createElement("a"); 
             link.href = URL.createObjectURL(blob); 
-            link.download = `clinical_motion_report_${Date.now()}.csv`; 
+            link.download = `clinical_motion_twin_${Date.now()}.csv`; 
             link.click();
         };
 
         btnResetSession.onclick = () => {
-            if (confirm("คุณต้องการล้างประวัติการทดสอบ และเริ่มต้นเซ็ตที่ 1 ใหม่ทั้งหมดใช่หรือไม่?")) {
+            if (confirm("คุณต้องการล้างประวัติชุดทดสอบระบบทั้งหมดใช่หรือไม่?")) {
                 recordsList = []; 
-                logOutput.innerHTML = `<span style="color: #64748b;">ยังไม่มีการบันทึกชุดข้อมูล...</span>`;
-                timerCount = 0; 
-                lblTimer.textContent = "0 วินาที";
-                stableTicks = 0;
+                logTableBody.innerHTML = `<tr><td colspan="4" style="text-align: center; color: #94a3b8; padding: 20px;">ยังไม่มีข้อมูลบันทึกในเซสชันนี้</td></tr>`;
+                timerCount = 0; lblTimer.textContent = "0 วินาที"; stableTicks = 0;
                 db.ref("system/isRecording").set(false); 
                 db.ref("system/currentSetNum").set(1);
                 db.ref("system/resetSignal").set(true).then(() => { db.ref("system/resetSignal").set(false); });
@@ -491,11 +607,7 @@
             let gyroRateRoll = data.gyro_roll_rate || 0;   
             let currentYaw = data.yaw || 0;
 
-            if (isFirstRun) {
-                filteredPitch = accelPitch;
-                filteredRoll = accelRoll;
-                isFirstRun = false;
-            }
+            if (isFirstRun) { filteredPitch = accelPitch; filteredRoll = accelRoll; isFirstRun = false; }
 
             filteredPitch = ALPHA * (filteredPitch + gyroRatePitch * dt) + (1.0 - ALPHA) * accelPitch;
             filteredRoll = ALPHA * (filteredRoll + gyroRateRoll * dt) + (1.0 - ALPHA) * accelRoll;
@@ -510,98 +622,84 @@
             realtimeChart.update('none');
 
             if (phoneGroup) {
-                phoneGroup.rotation.set(
-                    currentPitch * (Math.PI / 180), 
-                    -currentYaw * (Math.PI / 180), 
-                    currentRoll * (Math.PI / 180), 
-                    'YXZ'
-                );
+                phoneGroup.rotation.set(currentPitch * (Math.PI / 180), -currentYaw * (Math.PI / 180), currentRoll * (Math.PI / 180), 'YXZ');
             }
 
             document.getElementById("lblElevation").textContent = currentPitch.toFixed(1) + "°";
+            
+            let percentage = ((currentPitch + 90) / 180) * 100;
+            gaugeBar.style.width = Math.min(100, Math.max(0, percentage)) + "%";
 
             let pitchDiff = Math.abs(currentPitch - lastPitch);
             let rollDiff = Math.abs(currentRoll - lastRoll);
             let jitterIndex = (pitchDiff + rollDiff) / 2;
-            
-            lastPitch = currentPitch;
-            lastRoll = currentRoll;
+            lastPitch = currentPitch; lastRoll = currentRoll;
             document.getElementById("lblJitter").textContent = jitterIndex.toFixed(2) + "°";
 
             let isPerfectFlat = Math.abs(currentPitch) <= 1.0 && Math.abs(currentRoll) <= 1.0;
-
             if (isPerfectFlat) {
-                canvasWrapper.style.borderColor = "#22c55e";
-                statusBadge.textContent = "🟩 STABLE (ระดับระนาบตรง)";
-                statusBadge.style.background = "#14532d"; statusBadge.style.color = "#4ade80"; statusBadge.style.borderColor = "#22c55e";
-
+                canvasWrapper.style.borderColor = "#10b981";
+                statusBadge.textContent = "🟩 STABLE (ระนาบสมบูรณ์)";
+                statusBadge.style.background = "#d1fae5"; statusBadge.style.color = "#065f46";
                 stableTicks++;
                 if (jitterIndex < 0.15) {
-                    document.getElementById("lblGrade").textContent = "💎 Excellent";
-                    document.getElementById("lblGrade").style.color = "#4ade80";
+                    document.getElementById("lblGrade").textContent = "💎 Excellent"; document.getElementById("lblGrade").style.color = "#047857";
                 } else {
-                    document.getElementById("lblGrade").textContent = "✅ Acceptable";
-                    document.getElementById("lblGrade").style.color = "#fbbf24";
+                    document.getElementById("lblGrade").textContent = "✅ Acceptable"; document.getElementById("lblGrade").style.color = "#b45309";
                 }
             } else {
                 canvasWrapper.style.borderColor = "#ef4444";
-                statusBadge.textContent = "🟥 TILTED (เครื่องเอียง)";
-                statusBadge.style.background = "#451a03"; statusBadge.style.color = "#f87171"; statusBadge.style.borderColor = "#ef4444";
-
-                document.getElementById("lblGrade").textContent = "❌ Unstable";
-                document.getElementById("lblGrade").style.color = "#ef4444";
-                
+                statusBadge.textContent = "🚨 TILTED (เครื่องเอียงจากแกน)";
+                statusBadge.style.background = "#fee2e2"; statusBadge.style.color = "#991b1b";
+                document.getElementById("lblGrade").textContent = "❌ Unstable"; document.getElementById("lblGrade").style.color = "#ef4444";
                 stableTicks = Math.max(0, stableTicks - 2); 
             }
 
             let stableSeconds = (stableTicks * 0.05);  
             let stablePercent = Math.min(100, Math.floor((stableTicks / targetStableTicks) * 100));
-            
             document.getElementById("lblStableTime").textContent = stableSeconds.toFixed(1) + "s";
             document.getElementById("lblStablePercent").textContent = stablePercent + "%";
             document.getElementById("barStableProgress").style.width = stablePercent + "%";
 
             if (!firstPayloadReceived) {
-                minPitch = currentPitch; maxPitch = currentPitch;
-                minRoll = currentRoll; maxRoll = currentRoll;
-                firstPayloadReceived = true;
+                minPitch = currentPitch; maxPitch = currentPitch; minRoll = currentRoll; maxRoll = currentRoll; firstPayloadReceived = true;
             } else {
                 if (currentPitch < minPitch) minPitch = currentPitch;
                 if (currentPitch > maxPitch) maxPitch = currentPitch;
                 if (currentRoll < minRoll) minRoll = currentRoll;
                 if (currentRoll > maxRoll) maxRoll = currentRoll;
             }
-
-            let diffPitch = Math.abs(maxPitch - minPitch);
-            let diffRoll = Math.abs(maxRoll - minRoll);
-
-            document.getElementById("lblPitchROM").textContent = diffPitch.toFixed(1) + "°";
-            document.getElementById("lblRollROM").textContent = diffRoll.toFixed(1) + "°";
+            document.getElementById("lblPitchROM").textContent = Math.abs(maxPitch - minPitch).toFixed(1) + "°";
+            document.getElementById("lblRollROM").textContent = Math.abs(maxRoll - minRoll).toFixed(1) + "°";
         });
 
-        // 📐 THREE.js 3D Engine Setup
+        // 📐 THREE.js 3D Engine Setup - ขยายโมเดลขึ้นเกือบ 2 เท่าตามต้องการ
         let scene, camera, renderer, phoneGroup;
         const container3d = document.getElementById("canvas3d");
         
         if(container3d) {
-            scene = new THREE.Scene(); scene.background = new THREE.Color(0x0f172a);
-            camera = new THREE.PerspectiveCamera(45, container3d.clientWidth / 350, 0.1, 100);
-            camera.position.set(2.2, 2.4, 2.2); camera.lookAt(0, 0, 0);
+            scene = new THREE.Scene(); scene.background = new THREE.Color(0xf8fafc);
+            
+            // ปรับตำแหน่งกล้องให้ขยับเข้ามาใกล้ขึ้นอีกนิดเพื่อให้เห็นโมเดลใหญ่เต็มกรอบ
+            camera = new THREE.PerspectiveCamera(40, container3d.clientWidth / container3d.clientHeight, 0.1, 100);
+            camera.position.set(1.9, 1.8, 1.9); 
+            camera.lookAt(0, 0, 0);
 
             renderer = new THREE.WebGLRenderer({ antialias: true });
-            renderer.setSize(container3d.clientWidth, 350);
+            renderer.setSize(container3d.clientWidth, container3d.clientHeight);
             container3d.appendChild(renderer.domElement);
 
-            scene.add(new THREE.AmbientLight(0xffffff, 0.6));
-            let mainLight = new THREE.DirectionalLight(0xffffff, 0.7); mainLight.position.set(4, 8, 4); scene.add(mainLight);
-            let fillLight = new THREE.DirectionalLight(0x38bdf8, 0.4); fillLight.position.set(-4, 4, -4); scene.add(fillLight);
+            scene.add(new THREE.AmbientLight(0xffffff, 0.7));
+            let mainLight = new THREE.DirectionalLight(0x0ea5e9, 0.5); mainLight.position.set(4, 8, 4); scene.add(mainLight);
 
-            let gridHelper = new THREE.GridHelper(5, 20, 0x475569, 0x1e293b);
-            gridHelper.position.y = -0.1;
-            scene.add(gridHelper);
+            let polarGrid = new THREE.PolarGridHelper(1.8, 16, 8, 64, 0xcbd5e1, 0xe2e8f0);
+            polarGrid.position.y = -0.1;
+            scene.add(polarGrid);
 
             phoneGroup = new THREE.Group();
-            const width = 1.2, height = 2.4, depth = 0.12, radius = 0.15;
+            
+            // 🚀 ขยายมิติของตัวเครื่องโทรศัพท์ 3D (เพิ่มขนาดเกือบ 2 เท่าจากเดิม)
+            const width = 1.9, height = 3.6, depth = 0.2, radius = 0.22;
             let shape = new THREE.Shape();
             shape.moveTo(-width/2 + radius, height/2); shape.lineTo(width/2 - radius, height/2);
             shape.quadraticCurveTo(width/2, height/2, width/2, height/2 - radius); shape.lineTo(width/2, -height/2 + radius);
@@ -611,27 +709,30 @@
 
             let extrudeSettings = { depth: depth, bevelEnabled: true, bevelSegments: 3, steps: 1, bevelSize: 0.02, bevelThickness: 0.02 };
             let bodyGeo = new THREE.ExtrudeGeometry(shape, extrudeSettings); bodyGeo.center(); 
-            let bodyMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.2, metalness: 0.8 }); 
+            let bodyMat = new THREE.MeshStandardMaterial({ color: 0x475569, roughness: 0.3, metalness: 0.4 }); 
             let phoneBody = new THREE.Mesh(bodyGeo, bodyMat); phoneBody.rotation.x = -Math.PI / 2; phoneGroup.add(phoneBody);
 
-            let screenGeo = new THREE.BoxGeometry(width - 0.08, 0.01, height - 0.08);
-            let screenMat = new THREE.MeshStandardMaterial({ color: 0x020617, roughness: 0.05, metalness: 0.9 });
+            let screenGeo = new THREE.BoxGeometry(width - 0.12, 0.01, height - 0.12);
+            let screenMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.1, metalness: 0.7 });
             let phoneScreen = new THREE.Mesh(screenGeo, screenMat); phoneScreen.position.y = depth / 2 + 0.01; phoneGroup.add(phoneScreen);
 
+            // ขยายความยาวลูกศรบอกแนวพิกัดแกนให้ยาวชัดเจนตามโมเดล
             const origin = new THREE.Vector3(0, depth / 2 + 0.03, 0);
-            let arrowX = new THREE.ArrowHelper(new THREE.Vector3(1, 0, 0), origin, 1.3, 0xef4444, 0.25, 0.15);
-            let arrowY = new THREE.ArrowHelper(new THREE.Vector3(0, 0, -1), origin, 1.3, 0x22c55e, 0.25, 0.15);
-            let arrowZ = new THREE.ArrowHelper(new THREE.Vector3(0, 1, 0), origin, 1.3, 0x3b82f6, 0.25, 0.15);
+            let arrowX = new THREE.ArrowHelper(new THREE.Vector3(1, 0, 0), origin, 1.8, 0xef4444, 0.3, 0.15);
+            let arrowY = new THREE.ArrowHelper(new THREE.Vector3(0, 0, -1), origin, 1.8, 0x0ea5e9, 0.3, 0.15);
+            let arrowZ = new THREE.ArrowHelper(new THREE.Vector3(0, 1, 0), origin, 1.8, 0x6366f1, 0.3, 0.15);
             phoneGroup.add(arrowX); phoneGroup.add(arrowY); phoneGroup.add(arrowZ);
             scene.add(phoneGroup);
 
             function animate() { requestAnimationFrame(animate); renderer.render(scene, camera); }
             animate();
 
-            window.addEventListener('resize', () => {
-                camera.aspect = container3d.clientWidth / 350; camera.updateProjectionMatrix();
-                renderer.setSize(container3d.clientWidth, 350);
+            const resizeObserver = new ResizeObserver(() => {
+                camera.aspect = container3d.clientWidth / container3d.clientHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(container3d.clientWidth, container3d.clientHeight);
             });
+            resizeObserver.observe(container3d);
         }
         
         resetROM();
