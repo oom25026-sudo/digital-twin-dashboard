@@ -321,19 +321,26 @@
         if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
         const db = firebase.database();
 
-        // 💾 สถานะตัวแปรสำหรับการทำงานหลักภายในระบบ (Core Engine States)
+        // 💾 Status Variables for Core Engine States
         let isRecording = false;
         let timerCount = 0;
         let clockInterval = null;
         let recordsList = [];
-        let currentSetNum = 1; 
+        let currentSetNum = 1;
         
         let minPitch = 0, maxPitch = 0, minRoll = 0, maxRoll = 0;
         let firstPayloadReceived = false;
 
         let lastPitch = 0, lastRoll = 0;
-        let stableTicks = 0; 
+        let stableTicks = 0;
         const targetStableTicks = 60; // จำนวนรอบตรวจจับนิ่งต่อเนื่องเพื่ออัปเดตแถบวัด
+
+        // 🌀 Complementary Filter Engine Parameters
+        let filteredPitch = 0;
+        let filteredRoll = 0;
+        let lastTimestamp = Date.now();
+        let isFirstRun = true;
+        const ALPHA = 0.96; // ค่าสัมประสิทธิ์การถ่วงสัดส่วนน้ำหนัก (Gyro 96% / Accel 4%)
 
         // ดึงอิลิเมนต์ต่าง ๆ จาก UI DOM
         const btnStart = document.getElementById("btnStart");
@@ -352,7 +359,7 @@
 
         // 🔗 ซิงค์ค่าหมายเลขเซ็ตปัจจุบันจากฐานข้อมูล Firebase Realtime
         db.ref("system/currentSetNum").on("value", (snapshot) => {
-            if (snapshot.exists()) { currentSetNum = snapshot.val(); } 
+            if (snapshot.exists()) { currentSetNum = snapshot.val(); }
             lblSet.textContent = currentSetNum;
         });
 
@@ -431,17 +438,14 @@
             let pRom = document.getElementById("lblPitchROM").textContent.replace('°','');
             let rRom = document.getElementById("lblRollROM").textContent.replace('°','');
             
-            // ใส่บันทึกเข้าไปในอาร์เรย์เก็บข้อมูลประวัติหลัก
             recordsList.push({ set: currentSetNum, duration: timerCount, pitchRom: pRom, rollRom: rRom });
 
-            // เรนเดอร์ Log History ฝั่งขวาล่าง
             let logHTML = "";
             recordsList.forEach((r) => {
                 logHTML += `<div style="margin-bottom:4px; border-bottom: 1px dashed #334155; padding-bottom: 4px;">ชุดที่ ${r.set} เวลา ${r.duration} วิ (Pitch ROM: ${r.pitchRom}° / Roll ROM: ${r.rollRom}°)</div>`;
             });
             logOutput.innerHTML = logHTML;
 
-            // รีเซ็ตล้างสถานะและส่งสัญญานขึ้นระบบ Firebase เซ็ตหมายเลขบวกขึ้น 1 สเตป
             db.ref("system/resetSignal").set(true).then(() => { db.ref("system/resetSignal").set(false); });
             currentSetNum++;
             db.ref("system/currentSetNum").set(currentSetNum);
@@ -484,11 +488,33 @@
             const data = snapshot.val();
             if (!data) return;
 
-            let currentPitch = data.pitch || 0; 
-            let currentRoll = data.roll || 0;   
-            let currentYaw = data.yaw || 0;     
+            // ⏱️ คำนวณหากระแสเวลาสุ่มวัด (dt)
+            let currentTime = Date.now();
+            let dt = (currentTime - lastTimestamp) / 1000.0;
+            lastTimestamp = currentTime;
+            if (dt <= 0 || dt > 0.5) dt = 0.01; 
 
-            // ฟีดข้อมูลอัปเดตกราฟเส้นสด Chart.js
+            // 📥 ดึงข้อมูลเซนเซอร์ Accelerometer และ Gyroscope
+            let accelPitch = data.accel_pitch !== undefined ? data.accel_pitch : (data.pitch || 0);
+            let accelRoll = data.accel_roll !== undefined ? data.accel_roll : (data.roll || 0);
+            let gyroRatePitch = data.gyro_pitch_rate || 0; 
+            let gyroRateRoll = data.gyro_roll_rate || 0;   
+            let currentYaw = data.yaw || 0;
+
+            if (isFirstRun) {
+                filteredPitch = accelPitch;
+                filteredRoll = accelRoll;
+                isFirstRun = false;
+            }
+
+            // 🌀 Complementary Filter ผสานสัญญาณแอกเซอเลอโรมิเตอร์และไจโรสโคป
+            filteredPitch = ALPHA * (filteredPitch + gyroRatePitch * dt) + (1.0 - ALPHA) * accelPitch;
+            filteredRoll = ALPHA * (filteredRoll + gyroRateRoll * dt) + (1.0 - ALPHA) * accelRoll;
+
+            let currentPitch = filteredPitch;
+            let currentRoll = filteredRoll;
+
+            // อัปเดตกราฟเส้นสด Chart.js
             realtimeChart.data.datasets[0].data.shift(); realtimeChart.data.datasets[0].data.push(currentPitch);
             realtimeChart.data.datasets[1].data.shift(); realtimeChart.data.datasets[1].data.push(currentRoll);
             realtimeChart.update('none');
@@ -503,10 +529,9 @@
                 );
             }
 
-            // แสดงค่าผลลัพธ์องศาเรียลไทม์บนหน้าการประเมิน
+            // แสดงค่าผลลัพธ์องศาเรียลไทม์
             document.getElementById("lblElevation").textContent = currentPitch.toFixed(1) + "°";
             
-            // ตรวจจับทิศทางการเอียง (ซ้าย / ขวา) ตามความชันของแกน Roll 
             let tiltDirection = currentRoll >= 0 ? "ขวา " : "ซ้าย ";
             document.getElementById("lblTilt").textContent = tiltDirection + Math.abs(currentRoll).toFixed(1) + "°";
 
@@ -547,7 +572,7 @@
             }
 
             // คำนวณเวลาและเปอร์เซ็นต์สะสมนิ่งเรียลไทม์
-            let stableSeconds = (stableTicks * 0.05); 
+            let stableSeconds = (stableTicks * 0.05);  
             let stablePercent = Math.min(100, Math.floor((stableTicks / targetStableTicks) * 100));
             
             document.getElementById("lblStableTime").textContent = stableSeconds.toFixed(1) + "s";
