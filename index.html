@@ -754,7 +754,8 @@
                 phoneGroup.rotation.set(currentPitch * (Math.PI / 180), -currentYaw * (Math.PI / 180), currentRoll * (Math.PI / 180), 'YXZ');
             }
 
-            document.getElementById("lblElevation").textContent = currentPitch.toFixed(1) + "°";
+            // แปลงค่าเป็นบวกเสมอ (Absolute Value) ก่อนนำไปแสดงผลบนหน้าแดชบอร์ดตามที่ต้องการ
+            document.getElementById("lblElevation").textContent = Math.abs(currentPitch).toFixed(1) + "°";
             
             let percentage = ((currentPitch + 90) / 180) * 100;
             gaugeBar.style.width = Math.min(100, Math.max(0, percentage)) + "%";
