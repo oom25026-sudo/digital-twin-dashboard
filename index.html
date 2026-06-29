@@ -388,7 +388,7 @@
                     </div>
                     <div style="text-align: right;">
                         <span style="font-size: 11px; color: #64748b; font-weight:500;">แกนส่งผลหลัก</span>
-                        <div style="font-size:13px; font-weight:700; color:#0284c7; margin-top:4px; background:#e0f2fe; padding:2px 8px; border-radius:6px;">Vertical Relative Lift</div>
+                        <div style="font-size:13px; font-weight:700; color:#0284c7; margin-top:4px; background:#e0f2fe; padding:2px 8px; border-radius:6px;">Relative Vertical Lift</div>
                     </div>
                 </div>
 
@@ -561,9 +561,8 @@
         let packetInLastSecond = 0;
         let hzInterval = null;
 
-        // ตัวแปรควบคุม Dynamic Scale ของกราฟให้รองรับทั้งค่าบวกและลบจริง ๆ
-        let currentMinYScale = -45;
-        let currentMaxYScale = 45;
+        // ปรับกราฟให้เริ่มจาก 0 ถึง 90 องศา (ไม่มีค่าติดลบ)
+        let currentMaxYScale = 60;
 
         // ตัวแปรล็อกพิกัดมุมเริ่มต้นแนวตั้ง
         let basePitchOffset = null;
@@ -599,8 +598,8 @@
             data: {
                 labels: Array(25).fill(''),
                 datasets: [
-                    { label: 'Pitch', borderColor: '#ef4444', data: Array(25).fill(0), fill: false, tension: 0.1, borderWidth: 2.5, pointRadius: 0 },
-                    { label: 'Roll', borderColor: '#0ea5e9', data: Array(25).fill(0), fill: false, tension: 0.1, borderWidth: 2.5, pointRadius: 0 }
+                    { label: 'Elevation ROM', borderColor: '#0284c7', data: Array(25).fill(0), fill: false, tension: 0.1, borderWidth: 2.5, pointRadius: 0 },
+                    { label: 'Roll Offset', borderColor: '#cbd5e1', data: Array(25).fill(0), fill: false, tension: 0.1, borderWidth: 1.5, pointRadius: 0 }
                 ]
             },
             options: {
@@ -608,7 +607,7 @@
                 plugins: { legend: { display: false } },
                 scales: {
                     x: { display: false },
-                    y: { min: -45, max: 45, grid: { color: '#f1f5f9' }, ticks: { color: '#94a3b8', font: { size: 10 } } }
+                    y: { min: 0, max: 60, grid: { color: '#f1f5f9' }, ticks: { color: '#94a3b8', font: { size: 10 } } }
                 }
             }
         });
@@ -630,9 +629,8 @@
         function resetROM() {
             firstPayloadReceived = false;
             basePitchOffset = null; 
-            currentMinYScale = -45;
-            currentMaxYScale = 45;
-            realtimeChart.options.scales.y.min = currentMinYScale;
+            currentMaxYScale = 60;
+            realtimeChart.options.scales.y.min = 0;
             realtimeChart.options.scales.y.max = currentMaxYScale;
             realtimeChart.update('none');
 
@@ -640,7 +638,7 @@
             document.getElementById("lblPitchROM").textContent = "0.0°";
             document.getElementById("lblRollROM").textContent = "0.0°";
             document.getElementById("lblElevation").textContent = "0.0°";
-            gaugeBar.style.width = "50%"; // เริ่มตรงกลางเมื่อเป็น 0°
+            gaugeBar.style.width = "0%";
         }
 
         db.ref("system/resetSignal").on("value", (snapshot) => {
@@ -761,44 +759,33 @@
 
             if (!isRecording) return;
 
-            // บันทึกมุมเริ่มต้นแนวตั้งตอนกดปุ่มเริ่มเทสต์ไว้เป็นจุด 0° เสมอ
+            // บันทึกมุมเริ่มต้นแนวตั้งตอนกดปุ่มเริ่มเทสต์ไว้เป็นจุด 0° 
             if (basePitchOffset === null) {
                 basePitchOffset = currentPitch;
             }
 
-            // 🔥 บรรทัดนี้คำนวณค่าจริงแบบดั้งเดิม (ไม่ผ่าน Math.abs) 
-            // เอียงไปข้างหน้าจะเป็นบวก เอียงไปข้างหลังจะเป็นลบ (หรือกลับกันตามทิศทางดิบของมือถือคุณ)
-            let relativeElevation = currentPitch - basePitchOffset;
+            // 🔥 คำนวณส่วนต่างสัมพัทธ์แบบ Absolute ทำให้ได้ขนาดของมุมที่ยกขึ้นจริงเสมอ (ไม่มีค่าติดลบ)
+            let relativeElevation = Math.abs(currentPitch - basePitchOffset);
 
-            // ปรับ Dynamic Scale สำหรับกราฟแกน Y อัตโนมัติเมื่อค่าเลยขอบเขตล่างหรือบน
-            let updatedScale = false;
+            // ขยายสเกลกราฟแกน Y อัตโนมัติถ้าค่าสูงเกินไป
             if (relativeElevation > currentMaxYScale) {
                 currentMaxYScale = Math.ceil(relativeElevation + 15);
-                updatedScale = true;
-            }
-            if (relativeElevation < currentMinYScale) {
-                currentMinYScale = Math.floor(relativeElevation - 15);
-                updatedScale = true;
-            }
-            if (updatedScale) {
                 realtimeChart.options.scales.y.max = currentMaxYScale;
-                realtimeChart.options.scales.y.min = currentMinYScale;
             }
 
             realtimeChart.data.datasets[0].data.shift(); realtimeChart.data.datasets[0].data.push(relativeElevation);
-            realtimeChart.data.datasets[1].data.shift(); realtimeChart.data.datasets[1].data.push(currentRoll);
+            realtimeChart.data.datasets[1].data.shift(); realtimeChart.data.datasets[1].data.push(Math.abs(currentRoll));
             realtimeChart.update('none');
 
             if (phoneGroup) {
                 phoneGroup.rotation.set(currentPitch * (Math.PI / 180), -currentYaw * (Math.PI / 180), currentRoll * (Math.PI / 180), 'YXZ');
             }
 
-            // แสดงผลเป็นค่าจริงที่มีทั้งบวก สفر และติดลบอย่างตรงไปตรงมา
-            document.getElementById("lblElevation").textContent = (relativeElevation > 0 ? "+" : "") + relativeElevation.toFixed(1) + "°";
+            // แสดงผลลัพธ์เป็นค่าขนาดการยกตัวจริง (เริ่มนับที่ 0° เสมอเมื่อเปิดเครื่อง)
+            document.getElementById("lblElevation").textContent = relativeElevation.toFixed(1) + "°";
             
-            // แถบเกจสีฟ้าขยับตามสัดส่วน โดยอิงจากจุดศูนย์กลางสเกลปัจจุบัน
-            let totalScaleRange = currentMaxYScale - currentMinYScale;
-            let percentage = ((relativeElevation - currentMinYScale) / totalScaleRange) * 100;
+            // แถบเกจสีฟ้าเริ่มขยับจากซ้ายสุด (0%) ไปขวาสุดอิงตามสเกลความกว้างปัจจุบัน
+            let percentage = (relativeElevation / currentMaxYScale) * 100;
             gaugeBar.style.width = Math.min(100, Math.max(0, percentage)) + "%";
 
             let pitchDiff = Math.abs(currentPitch - lastPitch);
