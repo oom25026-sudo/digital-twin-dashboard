@@ -52,7 +52,7 @@
             gap: 12px;
         }
         
-        /* Grid Layout Dynamic Split - No Overlap */
+        /* Grid Layout Dynamic Split */
         .grid-layout {
             display: grid;
             grid-template-columns: 1.6fr 1fr;
@@ -522,7 +522,7 @@
     </div>
 </div>
 
-<!-- สแกนเชื่อมต่ออุปกรณ์ส่งสัญญาณไร้สาย QR Code -->
+<!-- สแกนเชื่อมต่ออุปกรณ์ส่งสัญญาณ QR Code -->
 <div id="qrModal" class="modal">
     <div class="modal-content">
         <h3 style="margin-top: 0; color: #0f172a; font-size:17px; font-weight:700;">📱 เชื่อมโยงสัญญาณโมบายพิกัด</h3>
@@ -560,6 +560,9 @@
         let totalPayloadCount = 0;
         let packetInLastSecond = 0;
         let hzInterval = null;
+
+        // ตัวแปรสูงสุดที่เคยเจอในรอบนั้น ๆ เพื่อเอามาทำ Dynamic Scale ให้กราฟและเกจ
+        let absoluteMaxElevationSeen = 90;
 
         // ตัวแปรล็อกพิกัดมุมเริ่มต้นแนวตั้ง
         let basePitchOffset = null;
@@ -626,6 +629,10 @@
         function resetROM() {
             firstPayloadReceived = false;
             basePitchOffset = null; 
+            absoluteMaxElevationSeen = 90; // รีเซ็ตสเกลกลับมาเริ่มต้น
+            realtimeChart.options.scales.y.max = 90;
+            realtimeChart.update('none');
+
             minPitch = 0; maxPitch = 0; minRoll = 0; maxRoll = 0;
             document.getElementById("lblPitchROM").textContent = "0.0°";
             document.getElementById("lblRollROM").textContent = "0.0°";
@@ -756,11 +763,14 @@
                 basePitchOffset = currentPitch;
             }
 
-            // คำนวณหาความต่างสัมพัทธ์จากแนวตั้ง (ยิ่งเอียงหรือยกลง ห่างจากท่าตั้งตรง ค่าจะยิ่งเพิ่มตามลำดับ)
+            // คำนวณหาความต่างสัมพัทธ์พิกัดแนวตั้งแบบอิสระ ไม่มีการดักค่าฟิคไว้ที่ 90 องศาแล้ว
             let relativeElevation = Math.abs(currentPitch - basePitchOffset);
 
-            // ล็อกขอบเขตทางกายภาพไว้ไม่ให้เกิน 90 องศา
-            if (relativeElevation > 90) relativeElevation = 90;
+            // ขยายขอบเขตเพดานกราฟอัตโนมัติ (Dynamic Scaling) หากยกองศาเกินขอบเขตปัจจุบัน
+            if (relativeElevation > absoluteMaxElevationSeen) {
+                absoluteMaxElevationSeen = Math.ceil(relativeElevation + 10); 
+                realtimeChart.options.scales.y.max = absoluteMaxElevationSeen;
+            }
 
             realtimeChart.data.datasets[0].data.shift(); realtimeChart.data.datasets[0].data.push(relativeElevation);
             realtimeChart.data.datasets[1].data.shift(); realtimeChart.data.datasets[1].data.push(currentRoll);
@@ -770,11 +780,11 @@
                 phoneGroup.rotation.set(currentPitch * (Math.PI / 180), -currentYaw * (Math.PI / 180), currentRoll * (Math.PI / 180), 'YXZ');
             }
 
-            // แสดงค่าองศาขึ้นตรง ๆ ตามแนวสัดส่วนที่เรายกขยับ (ไม่ติดลบ เริ่มจาก 0° แนวตั้ง)
+            // อัปเดตตัวเลขแสดงผลตามจริงแกนยกตัว (ทะลุเกิน 90 องศาได้อิสระ)
             document.getElementById("lblElevation").textContent = relativeElevation.toFixed(1) + "°";
             
-            // แถบเกจสีฟ้าขยายหลอดจาก 0% ถึง 100% ตามการยกจริงที่สูงสุด 90 องศา
-            let percentage = (relativeElevation / 90) * 100;
+            // ปรับแถบเกจวัดให้ลื่นไหลสอดรับตามอัตราสัดส่วน Dynamic Max สูงสุด ณ ปัจจุบัน
+            let percentage = (relativeElevation / absoluteMaxElevationSeen) * 100;
             gaugeBar.style.width = Math.min(100, Math.max(0, percentage)) + "%";
 
             let pitchDiff = Math.abs(currentPitch - lastPitch);
@@ -820,7 +830,7 @@
             document.getElementById("lblRollROM").textContent = Math.abs(maxRoll - minRoll).toFixed(1) + "°";
         });
 
-        // 📐 THREE.js Setup - มิติสัดส่วนพิกัดตัวโมเดลโทรศัพท์แบบมินิมอลสมส่วน
+        // 📐 THREE.js Setup
         let scene, camera, renderer, phoneGroup;
         const container3d = document.getElementById("canvas3d");
         
