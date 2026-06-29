@@ -388,7 +388,7 @@
                     </div>
                     <div style="text-align: right;">
                         <span style="font-size: 11px; color: #64748b; font-weight:500;">แกนส่งผลหลัก</span>
-                        <div style="font-size:13px; font-weight:700; color:#0284c7; margin-top:4px; background:#e0f2fe; padding:2px 8px; border-radius:6px;">Dynamic Roll-Y</div>
+                        <div style="font-size:13px; font-weight:700; color:#0284c7; margin-top:4px; background:#e0f2fe; padding:2px 8px; border-radius:6px;">Relative Lift</div>
                     </div>
                 </div>
 
@@ -561,6 +561,9 @@
         let packetInLastSecond = 0;
         let hzInterval = null;
 
+        // ตัวแปรเพิ่มใหม่สำหรับล็อกฐานมุมเริ่มต้นให้เริ่มคำนวณจาก 0° เสมอ
+        let basePitchOffset = null;
+
         const btnStart = document.getElementById("btnStart");
         const btnSave = document.getElementById("btnSave");
         const btnExport = document.getElementById("btnExport");
@@ -622,11 +625,12 @@
 
         function resetROM() {
             firstPayloadReceived = false;
+            basePitchOffset = null; // เคลียร์พิกัดจุดเริ่มต้นในการคำนวณใหม่
             minPitch = 0; maxPitch = 0; minRoll = 0; maxRoll = 0;
             document.getElementById("lblPitchROM").textContent = "0.0°";
             document.getElementById("lblRollROM").textContent = "0.0°";
             document.getElementById("lblElevation").textContent = "0.0°";
-            gaugeBar.style.width = "50%";
+            gaugeBar.style.width = "0%";
         }
 
         db.ref("system/resetSignal").on("value", (snapshot) => {
@@ -654,6 +658,7 @@
                 btnStart.textContent = "เริ่มการทดสอบ";
                 btnStart.style.background = "#0284c7";
                 btnStart.style.color = "#ffffff";
+                basePitchOffset = null; // รีเซ็ต Offset เมื่อกดหยุดทดสอบ เพื่อให้กดเริ่มครั้งใหม่จับพิกัด 0 เสมอ
             }
         });
 
@@ -746,7 +751,15 @@
 
             if (!isRecording) return;
 
-            realtimeChart.data.datasets[0].data.shift(); realtimeChart.data.datasets[0].data.push(currentPitch);
+            // กำหนดค่าจุดเริ่มต้น (Offset) ตอนเริ่มบันทึกครั้งแรกของเซ็ตนั้นๆ เพื่อบังคับให้เริ่มที่ 0° เสมอ
+            if (basePitchOffset === null) {
+                basePitchOffset = currentPitch;
+            }
+
+            // คำนวณหาค่าความต่างในการยกตัวนับจากจุดเริ่มต้น 0 องศาเป็นต้นไป
+            let relativeElevation = currentPitch - basePitchOffset;
+
+            realtimeChart.data.datasets[0].data.shift(); realtimeChart.data.datasets[0].data.push(relativeElevation);
             realtimeChart.data.datasets[1].data.shift(); realtimeChart.data.datasets[1].data.push(currentRoll);
             realtimeChart.update('none');
 
@@ -754,10 +767,11 @@
                 phoneGroup.rotation.set(currentPitch * (Math.PI / 180), -currentYaw * (Math.PI / 180), currentRoll * (Math.PI / 180), 'YXZ');
             }
 
-            // แปลงค่าเป็นบวกเสมอ (Absolute Value) ก่อนนำไปแสดงผลบนหน้าแดชบอร์ดตามที่ต้องการ
-            document.getElementById("lblElevation").textContent = Math.abs(currentPitch).toFixed(1) + "°";
+            // แสดงผลการยกตัวแบบเคลียร์ค่าลบ เริ่มจาก 0 และยกขึ้นไปตามค่าพิกัดความก้าวหน้าสัมพัทธ์
+            document.getElementById("lblElevation").textContent = Math.abs(relativeElevation).toFixed(1) + "°";
             
-            let percentage = ((currentPitch + 90) / 180) * 100;
+            // ปรับแต่งอนิเมชั่นแถบเกจให้วิ่งขยายจาก 0% ไปถึง 100% ตามสัดส่วนองศาสัมพัทธ์ที่ยกเพิ่มขึ้นจริง (จำกัดขอบเขตการคำนวณที่สูงสุด 90 องศา)
+            let percentage = (Math.abs(relativeElevation) / 90) * 100;
             gaugeBar.style.width = Math.min(100, Math.max(0, percentage)) + "%";
 
             let pitchDiff = Math.abs(currentPitch - lastPitch);
