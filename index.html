@@ -730,6 +730,7 @@
             const data = snapshot.val();
             if (!data) return;
 
+            // ย้ายการบันทึกสถานะเครือข่ายและระบบตรวจสอบพิกัดมาด้านบน เพื่อให้แสดงผลลัพธ์แพ็กเกจตลอดเวลาแม้จะยังไม่กดปุ่มบันทึกหรือทดสอบก็ตาม
             totalPayloadCount++;
             packetInLastSecond++;
             valTotalCount.textContent = totalPayloadCount + " Packets";
@@ -754,6 +755,11 @@
             let currentPitch = filteredPitch;
             let currentRoll = filteredRoll;
 
+            // บังคับเปลี่ยนทิศทางแกนโมเดล 3D แบบเรียลไทม์เสมอเพื่อให้แพทย์เห็นทิศทางการเอียงก่อนกดบันทึกเซสชัน
+            if (phoneGroup) {
+                phoneGroup.rotation.set(currentPitch * (Math.PI / 180), -currentYaw * (Math.PI / 180), currentRoll * (Math.PI / 180), 'YXZ');
+            }
+
             if (!isRecording) return;
 
             if (basePitchOffset === null) {
@@ -770,10 +776,6 @@
             realtimeChart.data.datasets[0].data.shift(); realtimeChart.data.datasets[0].data.push(relativeElevation);
             realtimeChart.data.datasets[1].data.shift(); realtimeChart.data.datasets[1].data.push(Math.abs(currentRoll));
             realtimeChart.update('none');
-
-            if (phoneGroup) {
-                phoneGroup.rotation.set(currentPitch * (Math.PI / 180), -currentYaw * (Math.PI / 180), currentRoll * (Math.PI / 180), 'YXZ');
-            }
 
             document.getElementById("lblElevation").textContent = relativeElevation.toFixed(1) + "°";
             
@@ -836,7 +838,8 @@
 
             renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
             renderer.setSize(container3d.clientWidth, container3d.clientHeight);
-            // แก้ไขจุดบั๊ก: เปลี่ยนจาก appendChild(renderer.render(theme)) เป็นเชื่อมต่อ domElement โดยตรง
+            
+            // แก้ไขจุดบั๊กเรียบร้อย: เชื่อมต่อ domElement ของ renderer เข้ากับหน้าเว็บของระบบโดยตรง
             container3d.appendChild(renderer.domElement);
 
             scene.add(new THREE.AmbientLight(0xffffff, 0.8));
